@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WorldMonitor — EDAS 集成 Demo</title>
+<style>body{font-family:Arial;margin:16px} .wrap{display:flex;gap:20px} .list{width:420px} .chart{flex:1} .event{border-bottom:1px solid #eee;padding:8px 0} .meta{color:#666;font-size:13px} #network{height:420px;border:1px solid #eee;margin-top:12px} #wordcloud{height:260px;border:1px solid #eee;margin-top:12px} .sidepanel{position:fixed;right:16px;top:60px;bottom:16px;width:420px;background:#fff;border-left:1px solid #eee;overflow:auto;padding:12px;box-shadow:-6px 0 20px rgba(0,0,0,0.04);display:none;z-index:40} .sidepanel h4{margin-top:0} .modal{position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(0,0,0,0.4);display:none;align-items:center;justify-content:center;z-index:50} .modal .box{background:#fff;padding:16px;max-width:900px;max-height:90vh;overflow:auto;border-radius:6px}</style>
+<script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
+<!-- wordcloud plugin for echarts -->
+<script src="https://cdn.jsdelivr.net/npm/echarts-wordcloud@1.1.3/dist/echarts-wordcloud.min.js"></script>
+<!-- graphology + sigma for graph rendering -->
+<script src="https://cdn.jsdelivr.net/npm/graphology@0.21.1/dist/graphology.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/graphology-layout-forceatlas2@0.7.1/build/forceatlas2.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sigma@2.3.0/build/sigma.min.js"></script>
+</head>
+<body>
+  <h2>EDAS 集成 Demo（静态）</h2>
+  <p>文件位置：<code>/edas_exports/</code>（已复制到主系统 public）。</p>
+  <div class="wrap">
+    <div class="list">
+      <h3>事件列表（按时间）</h3>
+      <div id="events"></div>
+      <h4>下载 KG/链路数据</h4>
+      <ul id="kglinks"></ul>
+    </div>
+    <div class="chart">
+      <h3>按日事件计数</h3>
+      <div id="chart" style="height:260px;"></div>
+      <h3>关键词词云（事件级）</h3>
+      <div id="wordcloud"></div>
+      <h3>KG / 人物链（按需加载）</h3>
+      <div id="network"></div>
+    </div>
+  </div>
+  <div class="sidepanel" id="sidepanel">
+    <button id="sideclose" style="float:right;border:0;background:transparent;font-size:18px;cursor:pointer">✕</button>
+    <h4>事件详情</h4>
+    <div id="sidecontent"></div>
+  </div>
+  <div class="modal" id="modal"><div class="box" id="modalbox"></div></div>
+<script>
+async function load(){
+  const idx = await fetch('/edas_exports/index.json').then(r=>r.json());
+  const events = await fetch('/edas_exports/'+idx.events).then(r=>r.json());
+  const tweets = await fetch('/edas_exports/'+idx.tweets_sample).then(r=>r.json());
+
+  // normalize events
+  const parsed = events.map(e=>({
+    id:e.id,title:e.title,summary:e.summary || '',segments:e.segments||{},bursty:!!e.bursty,date:e.date_dir || (e.source_file? e.source_file.split('\\')[4] : '')
+  }));
+  parsed.sort((a,b)=> (a.date||'').localeCompare(b.date||''));
+
+  // render list
+  const list = document.getElementById('events');
+  parsed.slice().reverse().slice(0,50).forEach(e=>{
+    const d = document.createElement('div'); d.className='event';
+    d.innerHTML = `<strong>${e.date} — ${e.title}</strong><div class="meta">${e.summary}</div><div class="meta">关键词：${Object.keys(e.segments).slice(0,6).join(', ')}</div>`;
+    d.addEventListener('click', ()=> openSidePanel(e, tweets));
+    list.appendChild(d);
+  });
+
+  // chart by date (interactive)
+  const counts = {};
+  parsed.forEach(e=>{ const k = e.date || 'unknown'; counts[k]=(counts[k]||0)+1 });
+  const labels = Object.keys(counts).sort();
+  const data = labels.map(l=>counts[l]);
+  const chart = echarts.init(document.getElementById('chart'));
+  chart.setOption({tooltip:{},xAxis:{type:'category',data:labels},yAxis:{type:'value'},series:[{type:'bar',data:data,showBackground:true}]});
+  chart.on('click', params=>{
+    const day = params.name;
+    const matched = parsed.filter(p=>p.date===day);
+    openSidePanel({title:`事件列表：${day}`,summary:`共 ${matched.length} 个事件`,matched}, tweets);
+  });
+
+  // word cloud from segments
+  const wordFreq = {};
+  parsed.forEach(e=>{ Object.keys(e.segments||{}).forEach(k=> wordFreq[k]=(wordFreq[k]||0)+1) });
+  const words = Object.keys(wordFreq).slice(0,200).map(k=>({name:k,value:wordFreq[k]}));
+  const wc = echarts.init(document.getElementById('wordcloud'));
+  wc.setOption({tooltip:{},series:[{type:'wordCloud',gridSize:2,sizeRange:[12,50],rotationRange:[0,0],textStyle:{color:'auto'},data:words}]});
+
+  // KG links with render button
+  const kglist = document.getElementById('kglinks');
+  idx.copied_assets.forEach(f=>{
+    const li = document.createElement('li');
+    li.innerHTML = `<a href="/edas_exports/${f}" target="_blank">${f}</a> — <button data-file="${f}">渲染网络</button>`;
+    const btn = li.querySelector('button');
+    btn.addEventListener('click', ()=> loadAndRenderGraph(f));
+    kglist.appendChild(li);
+  });
+
+  // expose for debugging
+  window._parsedEvents = parsed;
+}
+
+function openSidePanel(event, tweets){
+  const panel = document.getElementById('sidepanel');
+  const content = document.getElementById('sidecontent');
+  content.innerHTML = '';
+  if(event.matched){
+    content.innerHTML = `<div class="meta">${event.summary||''}</div><h4>事件：</h4>`+event.matched.map(m=>`<div class="event"><strong>${m.date} — ${m.title}</strong><div class="meta">${m.summary||''}</div></div>`).join('');
+  } else {
+    content.innerHTML = `<h4>${event.title}</h4><div class="meta">${event.summary||''}</div>`;
+    const samples = tweets.filter(t=>t.date && event.date && t.date.indexOf(event.date.slice(0,10))===0).slice(0,20);
+    if(samples.length){
+      const list = document.createElement('div');
+      list.innerHTML = '<h4>示例推文</h4>' + samples.map(s=>`<div class="event"><div class="meta">${s.created_at}</div><div>${escapeHtml(s.text)}</div></div>`).join('');
+      content.appendChild(list);
+    }
+  }
+  panel.style.display='block';
+}
+
+function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+async function loadAndRenderGraph(file){
+  const url = '/edas_exports/'+file;
+  const txt = await fetch(url).then(r=>r.text());
+  let nodes = [], edges = [];
+  try{
+    // try parse as JSON
+    const js = JSON.parse(txt);
+    if(js.nodes && js.edges){ nodes = js.nodes; edges = js.edges; }
+    else if(Array.isArray(js.nodes) && Array.isArray(js.edges)){ nodes = js.nodes; edges = js.edges; }
+    else if(js.elements && js.elements.nodes){ nodes = js.elements.nodes; edges = js.elements.edges || []; }
+    else {
+      // try guess: if it's an array of chains, convert
+      if(Array.isArray(js)){
+        // fallback: create nodes from unique ids and edges from chain links
+        const idSet = new Set();
+        js.forEach((c,i)=>{ if(c.nodes) c.nodes.forEach(n=>idSet.add(n.id||n)); });
+        nodes = Array.from(idSet).map(id=>({id,label:String(id)}));
+      }
+    }
+  }catch(_){
+    // try parse as GEXF XML
+    if(txt.trim().startsWith('<')){
+      const doc = new DOMParser().parseFromString(txt,'application/xml');
+      const nds = doc.querySelectorAll('node');
+      nds.forEach(n=> nodes.push({id:n.getAttribute('id'),label:n.getAttribute('label')||n.getAttribute('id')}));
+      const eds = doc.querySelectorAll('edge');
+      eds.forEach(e=> edges.push({source:e.getAttribute('source'),target:e.getAttribute('target'),weight: e.getAttribute('weight')||1}));
+    }
+  }
+
+  // build graphology graph
+  try{
+    const G = new graphology.Graph();
+    nodes.forEach(n=>{
+      const id = n.id || n.key || n.label;
+      if(!G.hasNode(id)) G.addNode(id,{label:n.label||id,size:n.size||1,color:n.color||undefined});
+    });
+    edges.forEach((e,i)=>{
+      const s = e.source, t = e.target;
+      if(s && t && !G.hasEdge(s,t)) G.addEdgeWithKey('e'+i,s,t,{weight:e.weight||1});
+    });
+
+    // compute layout quickly
+    const nodesArray = G.nodes();
+    nodesArray.forEach(n=>{ G.setNodeAttribute(n,'x',Math.random()*10); G.setNodeAttribute(n,'y',Math.random()*10); G.setNodeAttribute(n,'size',Math.max(1,(G.degree(n)||1))); });
+
+    // clear container
+    const container = document.getElementById('network'); container.innerHTML='';
+    // sigma renderer
+    try{
+      const renderer = new sigma.Sigma(G, container, {renderEdgeLabels:false});
+      // basic interactions
+      renderer.on('enterNode', ({node})=>{ G.setNodeAttribute(node,'color','#f00'); });
+      renderer.on('leaveNode', ({node})=>{ G.setNodeAttribute(node,'color',undefined); });
+    }catch(e){
+      // fallback: simple list
+      container.innerHTML = '<pre>无法用 sigma 渲染网络：'+escapeHtml(String(e))+'</pre>';
+    }
+  }catch(e){
+    document.getElementById('network').innerHTML = '<pre>构建图失败：'+escapeHtml(String(e))+'</pre>';
+  }
+}
+
+// hide modal on click outside
+document.getElementById('modal').addEventListener('click', e=>{ if(e.target.id==='modal') document.getElementById('modal').style.display='none'; });
+document.getElementById('sideclose').addEventListener('click', ()=>{ document.getElementById('sidepanel').style.display='none'; });
+
+load().catch(e=>{document.body.innerHTML='<h3>加载失败：</h3><pre>'+escapeHtml(String(e))+'</pre>'});
+</script>
+</body>
+</html>

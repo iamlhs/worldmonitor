@@ -1,0 +1,84 @@
+我是一个使用 Copilot CLI 运行时在 VS Code 的 AI 助手（Powered by GPT-5 mini）。下面是简要说明：
+
+项目结构（简要）
+- src/: 浏览器 SPA（TypeScript，组件、services、utils）
+- api/: Vercel Edge 函数
+- server/: 共享后端逻辑（gateway、handlers）
+- proto/: Protobuf 定义与生成流程
+- src-tauri/: Tauri 桌面壳与 sidecar
+- tests/、e2e/: 单元与端到端测试
+- docs/、scripts/、deploy/、docker/: 文档、脚本与部署配置
+
+如何运行
+- npm install
+- npm run dev        （启动 Vite 开发服）
+- npm run typecheck  （tsc --noEmit）
+- npm run test:data  （运行测试）
+- make generate      （生成 proto 代码，需 buf/sebuf）
+
+需要更详细的运行或开发说明要哪个部分，告诉我。
+
+更新了待办事项列表
+
+Read [](file:///d%3A/%E5%8D%8E%E4%B8%9C%E5%B8%88%E5%A4%A7%E8%AE%A1%E7%A7%91/6%E6%9C%88%E4%BA%8B%E4%BB%B6%E6%96%87%E4%BB%B6/worldmonitor-main/worldmonitor-main/AGENTS.md)
+
+我是一个在 VS Code 上使用 Copilot CLI 运行时的 AI 助手（Powered by GPT-5 mini）。下面简要说明关键目录/文件作用及添加智能体的步骤：
+
+关键目录/文件（简短）
+- src/: 浏览器 SPA
+  - src/app/: 应用编排（data-loader、刷新、布局）
+  - src/components/: 面板组件（扩展 Panel）
+  - src/services/: 业务逻辑
+  - src/config/: 面板/variant 配置（src/config/variants/）
+  - src/generated/: proto 生成的客户端/服务端桩
+  - src/workers/: Web Worker（分析/ML/向量 DB）
+- api/: Vercel Edge Functions（自包含 JS, 不能 import server/src）
+- server/_shared/: Redis、限流、LLM helper、cachedFetchJson()
+- server/worldmonitor/<domain>/: RPC 处理器（与 proto 对应）
+- proto/: protobuf 定义（改 proto → make generate → 更新 src/generated）
+- src-tauri/sidecar/: 桌面 Node sidecar（桌面智能体放这里）
+- api/bootstrap.js & scripts/: 数据引导/种子
+
+添加新智能体（推荐流程）
+1. 确定位置：后端服务（server + api）、前端面板（src/components）或桌面 sidecar（src-tauri/sidecar）。
+2. 若需新 API：在 proto/worldmonitor/<domain>/ 加定义并添加 (sebuf.http.config) RPC，运行 make generate，实现在 server/worldmonitor/<domain>/ 的 handler，并在需要时在 api/<domain>/ 建 Edge 函数作暴露。
+3. 若需 UI：新建 src/components/MyAgentPanel.ts（继承 Panel），在 src/config/panels.ts 注册，并在 src/app/data-loader.ts 接入数据源。
+4. 与 LLM 交互：复用 server/_shared/LLM helper 与 cachedFetchJson（含 Redis 缓存/防雪崩）。
+5. 更新 variant（src/config/variants/）、测试（tests/ 或 e2e/），在本地跑 npm install，然后 npm run dev 测试；若改 proto，执行 make generate 并运行相关测试。
+
+需要我把具体要添加的“智能体”类型/接口告诉我，能给出更精确的修改点和代码模版。
+
+假如已经有智能体（比如SKILLS或者文件夹代码压缩包），应该怎么集成到里面，然后在系统上展示？
+
+我是一个在 VS Code 上使用 Copilot CLI 运行时的 AI 助手（Powered by GPT-5 mini）。
+
+简要集成流程（步骤）
+
+解压并检查包：看 package.json、入口、依赖、env 要求、接口（HTTP/函数/文件）。
+选部署位置：后端 handler → server/worldmonitor/<domain>/；Edge 暴露层 → api/<domain>/（遵循 Edge 函数自包含约束）；桌面连接器 → src‑tauri/sidecar/；UI 面板 → src/components/。
+后端接入：若有 proto，修改 proto/worldmonitor/* 并运行 make generate；实现 handler 用 cachedFetchJson/LLM helper 放在 server/worldmonitor/。
+Edge/暴露：为前端或外部调用写 api/<domain>/ wrapper（按项目约定打包/导出）。
+前端展示：新增 src/components/MyAgentPanel.ts（继承 Panel），在 src/config/panels.ts 注册，并把 id 加入需要的 variant（src/config/variants/*）；在 src/app/data-loader.ts 接入数据源。
+配置 & 运行：设置 env/Redis/LLM keys，遵守项目规范（User‑Agent、fetch 用法等）；npm install → make generate（如改 proto）→ npm run dev，打开对应面板验证。
+测试与 CI：添加 tests/ 或 e2e/，确保 typecheck 与预推送钩子通过。
+需要我为某一部分生成具体示例代码（handler、Edge wrapper、Panel、注册配置）吗？
+
+这个那么大的系统有哪些具体功能，对应哪个文件组件
+
+我是一个在 VS Code 上使用 Copilot CLI 运行时的 AI 助手（Powered by GPT-5 mini）。下面给出精简的功能 ↔ 文件/组件映射：
+
+仪表盘面板（显示数据） — src/components/*（每个 Panel 类）
+应用编排/数据调度 — src/app/（data-loader.ts、refresh-scheduler）
+业务逻辑服务 — src/services/*
+配置与变体（哪些面板显示） — src/config/（panels.ts、variants/*）
+类型定义 — src/types/*
+前端 worker（分析/ML/向量） — src/workers/*
+后端 RPC 处理器 — server/worldmonitor/<domain>/*
+公共后端工具（Redis/LLM/缓存） — server/_shared/（redis.ts、llm helper、cachedFetchJson）
+Edge 暴露层（Vercel） — api/* 和 api/_*.js
+Protobuf 合约与生成 — proto/* → make generate → src/generated/
+桌面 sidecar（Tauri） — src-tauri/sidecar/
+数据引导/脚本 — api/bootstrap.js、scripts/
+测试 — tests/（单元）、e2e/（Playwright）
+文档/部署 — docs/、deploy/、docker/
+想要某个具体功能（如 LLM 智能体接入、添加面板、写 handler）的详细代码位置和示例，我可以针对该项给出精确文件与模版

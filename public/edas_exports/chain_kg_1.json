@@ -1,0 +1,601 @@
+{
+    "nodes": [
+        {
+            "name": "Barack Obama Sr.",
+            "category": 0,
+            "draggable": true,
+            "itemStyle": {
+                "normal": {
+                    "color": "#FFFFFF"
+                }
+            }
+        },
+        {
+            "name": "Barack Obama",
+            "category": 0,
+            "draggable": true,
+            "itemStyle": {
+                "normal": {
+                    "color": "#FFFFFF"
+                }
+            }
+        },
+        {
+            "name": "Joe Biden",
+            "category": 0,
+            "draggable": true,
+            "itemStyle": {
+                "normal": {
+                    "color": "#FFFFFF"
+                }
+            }
+        },
+        {
+            "name": "Roland Burris",
+            "category": 0,
+            "draggable": true,
+            "itemStyle": {
+                "normal": {
+                    "color": "#FFFFFF"
+                }
+            }
+        },
+        {
+            "name": "Kwame Raoul",
+            "category": 0,
+            "draggable": true,
+            "itemStyle": {
+                "normal": {
+                    "color": "#FFFFFF"
+                }
+            }
+        },
+        {
+            "name": "Ted Kaufman",
+            "category": 0,
+            "draggable": true,
+            "itemStyle": {
+                "normal": {
+                    "color": "#FFFFFF"
+                }
+            }
+        },
+        {
+            "name": "Richard Lugar",
+            "category": 0,
+            "draggable": true,
+            "itemStyle": {
+                "normal": {
+                    "color": "#FFFFFF"
+                }
+            }
+        },
+        {
+            "name": "John Kerry",
+            "category": 0,
+            "draggable": true,
+            "itemStyle": {
+                "normal": {
+                    "color": "#FFFFFF"
+                }
+            }
+        },
+        {
+            "name": "Jesse Helms",
+            "category": 0,
+            "draggable": true,
+            "itemStyle": {
+                "normal": {
+                    "color": "#FFFFFF"
+                }
+            }
+        },
+        {
+            "name": "Chuck Grassley",
+            "category": 0,
+            "draggable": true,
+            "itemStyle": {
+                "normal": {
+                    "color": "#FFFFFF"
+                }
+            }
+        },
+        {
+            "name": "Dianne Feinstein",
+            "category": 0,
+            "draggable": true,
+            "itemStyle": {
+                "normal": {
+                    "color": "#FFFFFF"
+                }
+            }
+        },
+        {
+            "name": "Strom Thurmond",
+            "category": 0,
+            "draggable": true,
+            "itemStyle": {
+                "normal": {
+                    "color": "#FFFFFF"
+                }
+            }
+        },
+        {
+            "name": "Orrin Hatch",
+            "category": 0,
+            "draggable": true,
+            "itemStyle": {
+                "normal": {
+                    "color": "#FFFFFF"
+                }
+            }
+        },
+        {
+            "name": "Rod Blagojevich",
+            "category": 0,
+            "draggable": true,
+            "itemStyle": {
+                "normal": {
+                    "color": "#FFFFFF"
+                }
+            }
+        },
+        {
+            "name": "James R. Thompson",
+            "category": 0,
+            "draggable": true,
+            "itemStyle": {
+                "normal": {
+                    "color": "#FFFFFF"
+                }
+            }
+        },
+        {
+            "name": "J. B. Pritzker",
+            "category": 0,
+            "draggable": true,
+            "itemStyle": {
+                "normal": {
+                    "color": "#FFFFFF"
+                }
+            }
+        },
+        {
+            "name": "United Church of Christ",
+            "category": 0,
+            "draggable": true,
+            "itemStyle": {
+                "normal": {
+                    "color": "#FFFFFF"
+                }
+            }
+        },
+        {
+            "name": "Ruth Ann Minner",
+            "category": 0,
+            "draggable": true,
+            "itemStyle": {
+                "normal": {
+                    "color": "#FFFFFF"
+                }
+            }
+        },
+        {
+            "name": "Chris Coons",
+            "category": 0,
+            "draggable": true,
+            "itemStyle": {
+                "normal": {
+                    "color": "#FFFFFF"
+                }
+            }
+        },
+        {
+            "name": "Dana Perino",
+            "category": 0,
+            "draggable": true,
+            "itemStyle": {
+                "normal": {
+                    "color": "#FFFFFF"
+                }
+            }
+        },
+        {
+            "name": "Catholic Church",
+            "category": 0,
+            "draggable": true,
+            "itemStyle": {
+                "normal": {
+                    "color": "#FFFFFF"
+                }
+            }
+        },
+        {
+            "name": "Claiborne Pell",
+            "category": 0,
+            "draggable": true,
+            "itemStyle": {
+                "normal": {
+                    "color": "#FFFFFF"
+                }
+            }
+        },
+        {
+            "name": "Tom Harkin",
+            "category": 0,
+            "draggable": true,
+            "itemStyle": {
+                "normal": {
+                    "color": "#FFFFFF"
+                }
+            }
+        },
+        {
+            "name": "Patrick Leahy",
+            "category": 0,
+            "draggable": true,
+            "itemStyle": {
+                "normal": {
+                    "color": "#FFFFFF"
+                }
+            }
+        },
+        {
+            "name": "United States",
+            "category": 0,
+            "draggable": true,
+            "itemStyle": {
+                "normal": {
+                    "color": "#FFFFFF"
+                }
+            }
+        },
+        {
+            "name": "Bob Menendez",
+            "category": 0,
+            "draggable": true,
+            "itemStyle": {
+                "normal": {
+                    "color": "#FFFFFF"
+                }
+            }
+        },
+        {
+            "name": "Mary Landrieu",
+            "category": 0,
+            "draggable": true,
+            "itemStyle": {
+                "normal": {
+                    "color": "#FFFFFF"
+                }
+            }
+        },
+        {
+            "name": "Kit Bond",
+            "category": 0,
+            "draggable": true,
+            "itemStyle": {
+                "normal": {
+                    "color": "#FFFFFF"
+                }
+            }
+        },
+        {
+            "name": "Paul Tsongas",
+            "category": 0,
+            "draggable": true,
+            "itemStyle": {
+                "normal": {
+                    "color": "#FFFFFF"
+                }
+            }
+        },
+        {
+            "name": "Mo Cowan",
+            "category": 0,
+            "draggable": true,
+            "itemStyle": {
+                "normal": {
+                    "color": "#FFFFFF"
+                }
+            }
+        },
+        {
+            "name": "Michael Dukakis",
+            "category": 0,
+            "draggable": true,
+            "itemStyle": {
+                "normal": {
+                    "color": "#FFFFFF"
+                }
+            }
+        }
+    ],
+    "links": [
+        {
+            "source": 0,
+            "target": 1,
+            "value": "Personname"
+        },
+        {
+            "source": 1,
+            "target": 2,
+            "value": "Vicepresident"
+        },
+        {
+            "source": 1,
+            "target": 3,
+            "value": "Successor1"
+        },
+        {
+            "source": 1,
+            "target": 4,
+            "value": "Successor2"
+        },
+        {
+            "source": 1,
+            "target": 2,
+            "value": "Vicepresident"
+        },
+        {
+            "source": 1,
+            "target": 3,
+            "value": "Successor1"
+        },
+        {
+            "source": 1,
+            "target": 4,
+            "value": "Successor2"
+        },
+        {
+            "source": 2,
+            "target": 1,
+            "value": "President"
+        },
+        {
+            "source": 2,
+            "target": 5,
+            "value": "Successor1"
+        },
+        {
+            "source": 2,
+            "target": 6,
+            "value": "Predecessor2"
+        },
+        {
+            "source": 2,
+            "target": 7,
+            "value": "Successor2"
+        },
+        {
+            "source": 2,
+            "target": 8,
+            "value": "Predecessor3"
+        },
+        {
+            "source": 2,
+            "target": 6,
+            "value": "Successor3"
+        },
+        {
+            "source": 2,
+            "target": 8,
+            "value": "Predecessor4"
+        },
+        {
+            "source": 2,
+            "target": 8,
+            "value": "Successor4"
+        },
+        {
+            "source": 2,
+            "target": 9,
+            "value": "Predecessor5"
+        },
+        {
+            "source": 2,
+            "target": 10,
+            "value": "Successor5"
+        },
+        {
+            "source": 2,
+            "target": 11,
+            "value": "Predecessor6"
+        },
+        {
+            "source": 2,
+            "target": 12,
+            "value": "Successor6"
+        },
+        {
+            "source": 2,
+            "target": 1,
+            "value": "President"
+        },
+        {
+            "source": 2,
+            "target": 5,
+            "value": "Successor1"
+        },
+        {
+            "source": 2,
+            "target": 6,
+            "value": "Predecessor2"
+        },
+        {
+            "source": 2,
+            "target": 7,
+            "value": "Successor2"
+        },
+        {
+            "source": 2,
+            "target": 8,
+            "value": "Predecessor3"
+        },
+        {
+            "source": 2,
+            "target": 6,
+            "value": "Successor3"
+        },
+        {
+            "source": 2,
+            "target": 8,
+            "value": "Predecessor4"
+        },
+        {
+            "source": 2,
+            "target": 8,
+            "value": "Successor4"
+        },
+        {
+            "source": 2,
+            "target": 9,
+            "value": "Predecessor5"
+        },
+        {
+            "source": 2,
+            "target": 10,
+            "value": "Successor5"
+        },
+        {
+            "source": 2,
+            "target": 11,
+            "value": "Predecessor6"
+        },
+        {
+            "source": 2,
+            "target": 12,
+            "value": "Successor6"
+        },
+        {
+            "source": 3,
+            "target": 13,
+            "value": "Appointer"
+        },
+        {
+            "source": 3,
+            "target": 14,
+            "value": "Governor2"
+        },
+        {
+            "source": 4,
+            "target": 15,
+            "value": "Governor"
+        },
+        {
+            "source": 4,
+            "target": 1,
+            "value": "Predecessor1"
+        },
+        {
+            "source": 4,
+            "target": 16,
+            "value": "Itemclass5"
+        },
+        {
+            "source": 5,
+            "target": 17,
+            "value": "Appointed1"
+        },
+        {
+            "source": 5,
+            "target": 2,
+            "value": "Predecessor1"
+        },
+        {
+            "source": 5,
+            "target": 18,
+            "value": "Successor1"
+        },
+        {
+            "source": 5,
+            "target": 19,
+            "value": "Successor2"
+        },
+        {
+            "source": 5,
+            "target": 20,
+            "value": "Religion"
+        },
+        {
+            "source": 6,
+            "target": 2,
+            "value": "Predecessor1"
+        },
+        {
+            "source": 6,
+            "target": 2,
+            "value": "Successor1"
+        },
+        {
+            "source": 6,
+            "target": 21,
+            "value": "Successor2"
+        },
+        {
+            "source": 6,
+            "target": 22,
+            "value": "Predecessor3"
+        },
+        {
+            "source": 6,
+            "target": 22,
+            "value": "Successor3"
+        },
+        {
+            "source": 6,
+            "target": 23,
+            "value": "Predecessor4"
+        },
+        {
+            "source": 6,
+            "target": 22,
+            "value": "Successor4"
+        },
+        {
+            "source": 6,
+            "target": 24,
+            "value": "Allegiance"
+        },
+        {
+            "source": 7,
+            "target": 1,
+            "value": "President"
+        },
+        {
+            "source": 7,
+            "target": 2,
+            "value": "Predecessor1"
+        },
+        {
+            "source": 7,
+            "target": 25,
+            "value": "Successor1"
+        },
+        {
+            "source": 7,
+            "target": 26,
+            "value": "Successor2"
+        },
+        {
+            "source": 7,
+            "target": 27,
+            "value": "Predecessor3"
+        },
+        {
+            "source": 7,
+            "target": 28,
+            "value": "Predecessor4"
+        },
+        {
+            "source": 7,
+            "target": 29,
+            "value": "Successor4"
+        },
+        {
+            "source": 7,
+            "target": 30,
+            "value": "Governor5"
+        }
+    ]
+}

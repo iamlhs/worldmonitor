@@ -1,0 +1,16 @@
+{
+  "events": "events.json",
+  "tweets_sample": "tweets_sample.json",
+  "copied_assets": [
+    "chain1.json",
+    "chain2.json",
+    "chain_kg.json",
+    "chain_kg_1.json",
+    "KG_chain.json",
+    "people.gexf",
+    "people1.gexf",
+    "people2.gexf",
+    "people3.gexf",
+    "people4.gexf"
+  ]
+}
