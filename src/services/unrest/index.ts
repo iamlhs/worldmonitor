@@ -56,6 +56,9 @@ function mapConfidence(c: string): 'high' | 'medium' | 'low' {
 // ---- Core Adapter: proto UnrestEvent -> legacy SocialUnrestEvent ----
 
 function toSocialUnrestEvent(e: UnrestEvent): SocialUnrestEvent {
+  // Prefer explicit EDAS detection: seed entries use id prefix `edas:` and/or sources includes 'edas'.
+  const detected = (Array.isArray(e.sources) && e.sources.includes('edas')) || String(e.id).startsWith('edas:');
+  const mappedSource = detected ? 'edas' : mapSourceType(e.sourceType);
   return {
     id: e.id,
     title: e.title,
@@ -71,12 +74,46 @@ function toSocialUnrestEvent(e: UnrestEvent): SocialUnrestEvent {
     fatalities: e.fatalities > 0 ? e.fatalities : undefined,
     sources: e.sources,
     sourceUrls: e.sourceUrls?.length ? e.sourceUrls : undefined,
-    sourceType: mapSourceType(e.sourceType),
+    // cast to satisfy ProtestSource typing; 'edas' is a runtime marker used by the map renderer
+    sourceType: (mappedSource as unknown) as ProtestSource,
     tags: e.tags.length > 0 ? e.tags : undefined,
     actors: e.actors.length > 0 ? e.actors : undefined,
     confidence: mapConfidence(e.confidence),
     validated: mapConfidence(e.confidence) === 'high',
   };
+}
+
+// ---- EDAS Layer Routing ----
+
+/**
+ * Parse the `_category:<cat>__layer:<layer>` tag from an EDAS event's tags
+ * to determine which map layer it should render on.
+ * Returns the target layer key (default: 'protests').
+ */
+export function getEdasTargetLayer(event: SocialUnrestEvent): string {
+  if (!event.tags) return 'protests';
+  const layerTag = event.tags.find(t => t.startsWith('_category:') && t.includes('__layer:'));
+  if (layerTag) {
+    const match = layerTag.match(/__layer:(\w+)/);
+    if (match) return match[1];
+  }
+  return 'protests';
+}
+
+/**
+ * Group EDAS events by their target map layer.
+ * Returns a map of layerKey -> SocialUnrestEvent[].
+ */
+export function groupEdasByLayer(events: SocialUnrestEvent[]): Map<string, SocialUnrestEvent[]> {
+  const byLayer = new Map<string, SocialUnrestEvent[]>();
+  for (const event of events) {
+    if (event.sourceType !== 'edas' && !String(event.id).startsWith('edas:')) continue;
+    const layer = getEdasTargetLayer(event);
+    const existing = byLayer.get(layer) || [];
+    existing.push(event);
+    byLayer.set(layer, existing);
+  }
+  return byLayer;
 }
 
 // ---- Exported Types ----

@@ -59,6 +59,7 @@ const BOOTSTRAP_CACHE_KEYS = {
   positiveGeoEvents: 'positive_events:geo-bootstrap:v1',
   theaterPosture: 'theater_posture:sebuf:stale:v1',
   riskScores: 'risk:scores:sebuf:stale:v5',
+  edasEvents: 'unrest:events:v1',
   naturalEvents: 'natural:events:v1',
   flightDelays: 'aviation:delays-bootstrap:v2',
   insights: 'news:insights:v1',
@@ -182,7 +183,7 @@ const SLOW_KEYS = new Set([
 ]);
 const FAST_KEYS = new Set([
   'earthquakes', 'outages', 'serviceStatuses', 'ddosAttacks', 'trafficAnomalies', 'macroSignals', 'chokepoints',
-  'marketQuotes', 'commodityQuotes', 'positiveGeoEvents', 'riskScores', 'flightDelays','insights', 'predictions',
+  'marketQuotes', 'commodityQuotes', 'positiveGeoEvents', 'riskScores', 'flightDelays','insights', 'predictions', 'edasEvents',
   'iranEvents', 'temporalAnomalies', 'weatherAlerts', 'spending', 'theaterPosture', 'gdeltIntel',
   'correlationCards', 'forecasts', 'shippingRates', 'shippingStress', 'socialVelocity', 'wsbTickers',
 ]);

@@ -1141,6 +1141,12 @@ export class PanelLayoutManager implements AppModule {
     this.createPanel('social-velocity', () => new SocialVelocityPanel());
     this.createPanel('wsb-ticker-scanner', () => new WsbTickerScannerPanel());
 
+    // EDAS analysis panel — created eagerly so the map popup's "深度分析"
+    // button can dispatch edas:open-detail events to it at any time.
+    this.lazyPanel('edas-demo', () =>
+      import('@/components/EDASDemoPanel').then(m => new m.EDASDemoPanel()),
+    );
+
     this.lazyPanel('displacement', () =>
       import('@/components/DisplacementPanel').then(m => {
         const p = new m.DisplacementPanel();

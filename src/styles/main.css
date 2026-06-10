@@ -5119,6 +5119,39 @@ body.playback-mode .status-dot {
   background: var(--semantic-normal);
 }
 
+/* EDAS popup overrides — purple theme */
+.popup-header.protest.edas {
+  --protest-color: #b44aff;
+  background: color-mix(in srgb, #b44aff 12%, transparent);
+  border-bottom-color: #b44aff44;
+}
+
+.popup-badge.edas {
+  color: #b44aff;
+  background: none;
+}
+
+.popup-badge.edas::before {
+  background: #b44aff;
+}
+
+.popup-body-edas {
+  border-left: 2px solid #b44aff33;
+}
+
+/* EDAS indicator dot in cluster list */
+.edas-dot {
+  color: #b44aff;
+  font-size: 8px;
+  margin: 0 2px;
+  vertical-align: middle;
+  opacity: 0.8;
+}
+
+.cluster-item.edas-event {
+  border-left-color: #b44aff66 !important;
+}
+
 .popup-tags {
   display: flex;
   flex-wrap: wrap;
@@ -7755,6 +7788,66 @@ a.prediction-link:hover {
 .cluster-source-link {
   margin-top: 0;
   font-size: 10px;
+}
+
+/* EDAS analysis button in popup */
+.edas-analysis-btn {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: color-mix(in srgb, #b44aff 12%, transparent);
+  color: #d4a0ff;
+  border: 1px solid #b44aff44;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.12s;
+  font-family: inherit;
+}
+
+.edas-analysis-btn:hover {
+  background: color-mix(in srgb, #b44aff 22%, transparent);
+  border-color: #b44aff88;
+}
+
+/* EDAS cluster count badge */
+.edas-count-badge {
+  font-size: 8px;
+  background: color-mix(in srgb, #b44aff 20%, transparent);
+  color: #d4a0ff;
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-left: 4px;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
+/* EDAS summary item in cluster popup */
+.summary-item.edas-summary {
+  color: #b44aff;
+  background: color-mix(in srgb, #b44aff 10%, transparent);
+}
+
+/* EDAS cluster item analysis button */
+.edas-cluster-item-btn {
+  background: transparent;
+  border: none;
+  color: #b44aff;
+  font-size: 9px;
+  cursor: pointer;
+  padding: 0 2px;
+  font-family: inherit;
+  vertical-align: baseline;
+  opacity: 0.7;
+  transition: opacity 0.12s;
+}
+
+.edas-cluster-item-btn:hover {
+  opacity: 1;
+  text-decoration: underline;
 }
 
 /* Hotspot subtitles on map */

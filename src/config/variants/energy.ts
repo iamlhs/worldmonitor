@@ -85,7 +85,7 @@ export const DEFAULT_MAP_LAYERS: MapLayers = {
   cloudRegions: false,
   accelerators: false,
   techHQs: false,
-  techEvents: false,
+  techEvents: true,
   // Finance variant layers
   stockExchanges: false,
   financialCenters: false,

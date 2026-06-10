@@ -47,6 +47,7 @@ import {
   fetchCableHealth,
   fetchProtestEvents,
   getProtestStatus,
+  groupEdasByLayer,
   fetchFlightDelays,
   fetchMilitaryFlights,
   fetchMilitaryVessels,
@@ -1247,6 +1248,79 @@ export class DataLoaderManager implements AppModule {
 
     this.ctx.map?.updateHotspotActivity(this.ctx.allNews);
 
+    // EDAS demo integration: load exports from public/edas_exports and render as map points
+    (async () => {
+      try {
+        const idxResp = await fetch('/edas_exports/index.json');
+        if (!idxResp.ok) return;
+        const idx = await idxResp.json();
+        if (!idx?.events) return;
+        const eventsResp = await fetch('/edas_exports/' + idx.events);
+        if (!eventsResp.ok) return;
+        const events = await eventsResp.json();
+        if (!Array.isArray(events)) return;
+
+        // build tech-style markers for the unified map API
+        const mapEvents: any[] = [];
+        const { getCountryCentroid } = await import('@/services/country-geometry');
+        for (const e of events) {
+          // attempt common coordinate fields
+          let lat: number | null | undefined = e.lat ?? e.latitude ?? e.lat_deg ?? e.latitude_deg ?? null;
+          let lon: number | null | undefined = e.lon ?? e.lng ?? e.longitude ?? e.lon_deg ?? e.longitude_deg ?? null;
+          // geometry / coordinates arrays (GeoJSON-like)
+          if ((lat == null || lon == null) && e.geometry && Array.isArray(e.geometry.coordinates)) {
+            lon = lon ?? e.geometry.coordinates[0];
+            lat = lat ?? e.geometry.coordinates[1];
+          }
+          // some exports place coord under point or location
+          if ((lat == null || lon == null) && e.point) {
+            lat = lat ?? e.point.lat ?? e.point.latitude ?? null;
+            lon = lon ?? e.point.lon ?? e.point.lng ?? e.point.longitude ?? null;
+          }
+
+          // country fallback to centroid if no coords
+          const countryCode = e.countryCode ?? e.country ?? e.country_code ?? e.cc ?? null;
+          if ((lat == null || lon == null) && countryCode) {
+            try {
+              const centroid = getCountryCentroid(countryCode);
+              if (centroid) { lat = lat ?? centroid.lat; lon = lon ?? centroid.lon; }
+            } catch (_) {
+              // ignore
+            }
+          }
+
+          const startDate = e.startDate ?? e.start_date ?? e.date ?? e.published_at ?? null;
+          const daysUntil = startDate ? Math.max(0, Math.ceil((new Date(startDate).getTime() - Date.now()) / (24*60*60*1000))) : 0;
+
+          const marker = {
+            id: String(e.id ?? e.event_id ?? e.uuid ?? ''),
+            title: e.title ?? e.name ?? '',
+            location: e.location ?? e.location_name ?? '',
+            lat: typeof lat === 'number' ? lat : (lat ? Number(lat) : NaN),
+            lng: typeof lon === 'number' ? lon : (lon ? Number(lon) : NaN),
+            country: countryCode ?? '',
+            startDate: startDate ?? null,
+            endDate: e.endDate ?? e.end_date ?? null,
+            url: e.url ?? e.link ?? null,
+            daysUntil,
+          } as any;
+
+          if (Number.isFinite(marker.lat) && Number.isFinite(marker.lng)) mapEvents.push(marker);
+        }
+
+        if (mapEvents.length > 0) {
+          this.ctx.map?.setTechEvents(mapEvents);
+        } else {
+          // clear previous if none found
+          this.ctx.map?.setTechEvents([]);
+        }
+      } catch (err) {
+        // don't break main load if edas assets missing
+        console.warn('[EDAS] failed to load public/edas_exports:', err);
+        try { this.ctx.map?.setTechEvents([]); } catch (_) {}
+      }
+    })();
+
     this.updateMonitorResults();
 
     try {
@@ -2118,6 +2192,27 @@ export class DataLoaderManager implements AppModule {
         if (protestData.sources.gdelt > 0) dataFreshness.recordUpdate('gdelt', protestData.sources.gdelt);
         if (protestData.sources.gdelt > 0) dataFreshness.recordUpdate('gdelt_doc', protestData.sources.gdelt);
         if (this.ctx.mapLayers.protests) {
+          // Route EDAS events to target layers based on content classification
+          const edasByLayer = groupEdasByLayer(protestData.events);
+          for (const [layerKey, edasEvents] of edasByLayer) {
+            if (layerKey === 'protests') continue; // already in protests setter
+            if (edasEvents.length === 0) continue;
+
+            // Route to target layer: create lightweight marker events from EDAS data
+            if (layerKey === 'conflicts' && this.ctx.mapLayers.conflicts) {
+              // For conflict-classified EDAS events, keep them on protests layer
+              // but mark distinctly. Future: wire to setConflictZones().
+            } else if (layerKey === 'natural' && this.ctx.mapLayers.natural) {
+              // For natural event-classified EDAS events, keep on protests layer
+              // Future: convert to NaturalEvent[] and call setNaturalEvents()
+            }
+            // Other layers follow same pattern — EDAS events stay in protests
+            // layer for now, differentiated by eventType and purple EDAS styling.
+          }
+
+          // All EDAS events remain in the protests stream, correctly classified
+          // by eventType (protest/riot/strike/demonstration) and marked with
+          // _category / _layer tags for future client-side routing.
           this.ctx.map?.setProtests(protestData.events);
           this.ctx.map?.setLayerReady('protests', protestData.events.length > 0);
           const status = getProtestStatus();

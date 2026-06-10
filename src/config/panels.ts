@@ -116,6 +116,7 @@ const FULL_PANELS: Record<string, PanelConfig> = {
   'deduction': { name: 'Deduct Situation', enabled: false, priority: 1, premium: 'locked' as const },
   'geo-hubs': { name: 'Geopolitical Hubs', enabled: false, priority: 2 },
   'tech-hubs': { name: 'Hot Tech Hubs', enabled: false, priority: 2 },
+  'edas-demo': { name: 'EDAS 事件分析', enabled: true, priority: 2 },
 };
 
 const FULL_MAP_LAYERS: MapLayers = {
@@ -142,7 +143,7 @@ const FULL_MAP_LAYERS: MapLayers = {
   outages: true,
   cyberThreats: false,
   datacenters: false,
-  protests: false,
+  protests: true,
   flights: false,
   military: true,
   natural: true,
@@ -207,7 +208,7 @@ const FULL_MOBILE_MAP_LAYERS: MapLayers = {
   outages: true,
   cyberThreats: false,
   datacenters: false,
-  protests: false,
+  protests: true,
   flights: false,
   military: false,
   natural: true,

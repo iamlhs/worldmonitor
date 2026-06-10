@@ -2166,7 +2166,7 @@ export class MapComponent {
     }
 
     // Tech Events / Conferences (📅 icons) - with clustering
-    if (this.state.layers.techEvents && this.techEvents.length > 0) {
+    if ((this.state.layers.techEvents || this.techEvents.length > 0) && this.techEvents.length > 0) {
       const mapWidth = this.container.clientWidth;
       const mapHeight = this.container.clientHeight;
 

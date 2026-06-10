@@ -273,6 +273,20 @@ export class MapPopup {
     // Append to body to avoid container overflow clipping
     document.body.appendChild(this.popup);
 
+    // If this is a tech event popup, dispatch event to open EDAS panel with detail id
+    try {
+      if (data.type === 'techEvent') {
+        const te = data.data as TechEventPopupData;
+        if (te?.id) window.dispatchEvent(new CustomEvent('edas:open-detail', { detail: { id: te.id } }));
+      } else if (data.type === 'techEventCluster') {
+        const cluster = data.data as TechEventClusterData;
+        const firstId = cluster?.items?.[0]?.id;
+        if (firstId) window.dispatchEvent(new CustomEvent('edas:open-detail', { detail: { id: firstId } }));
+      }
+    } catch (e) {
+      /* no-op */
+    }
+
     // Mount transit chart for waterway popups after DOM insertion
     if (data.type === 'waterway') {
       const waterway = data.data as StrategicWaterway;
@@ -345,6 +359,16 @@ export class MapPopup {
       const target = e.target as HTMLElement;
       if (target.closest('.popup-close') || target.closest('.map-popup-sheet-handle')) {
         this.hide();
+        return;
+      }
+      // EDAS analysis button: dispatch event to open panel
+      const edasBtn = target.closest('.edas-analysis-btn, .edas-cluster-item-btn') as HTMLElement | null;
+      if (edasBtn) {
+        const edasId = edasBtn.getAttribute('data-edas-id');
+        if (edasId) {
+          window.dispatchEvent(new CustomEvent('edas:open-detail', { detail: { id: edasId } }));
+          this.hide();
+        }
         return;
       }
       const toggle = target.closest('.cluster-toggle') as HTMLButtonElement | null;
@@ -1456,7 +1480,28 @@ export class MapPopup {
     const severityLabel = escapeHtml(event.severity.toUpperCase());
     const eventTypeLabel = escapeHtml(event.eventType.replace('_', ' ').toUpperCase());
     const icon = event.eventType === 'riot' ? '🔥' : event.eventType === 'strike' ? '✊' : '📢';
-    const sourceLabel = event.sourceType === 'acled' ? t('popups.protest.acledVerified') : t('popups.protest.gdelt');
+
+    // EDAS source detection — id prefix 'edas:' is the most reliable signal
+    // since the server handler always sets it. sourceType may be stripped by
+    // the type system at compile time (ProtestSource doesn't include 'edas').
+    const _edasId = String(event.id);
+    const isEdas = _edasId.startsWith('edas:') || event.sourceType === 'edas' || (Array.isArray(event.sources) && event.sources.includes('edas'));
+    let sourceLabel: string;
+    let sourceBadgeClass: string;
+    if (isEdas) {
+      sourceLabel = 'EDAS';
+      sourceBadgeClass = 'edas';
+    } else if (event.sourceType === 'acled') {
+      sourceLabel = t('popups.protest.acledVerified');
+      sourceBadgeClass = 'verified';
+    } else {
+      sourceLabel = t('popups.protest.gdelt');
+      sourceBadgeClass = '';
+    }
+    const sourceBadge = sourceBadgeClass
+      ? `<span class="popup-badge ${sourceBadgeClass}">${sourceLabel}</span>`
+      : `<span class="popup-badge">${sourceLabel}</span>`;
+
     const validatedBadge = event.validated ? `<span class="popup-badge verified">${t('popups.verified')}</span>` : '';
     const fatalitiesSection = event.fatalities
       ? `<div class="popup-stat"><span class="stat-label">${t('popups.fatalities')}</span><span class="stat-value alert">${event.fatalities}</span></div>`
@@ -1468,36 +1513,46 @@ export class MapPopup {
     const tagsSection = event.tags?.length
       ? `<div class="popup-tags">${event.tags.map(t => `<span class="popup-tag">${escapeHtml(t)}</span>`).join('')}</div>`
       : '';
-    const relatedHotspots = event.relatedHotspots?.length
-      ? `<div class="popup-related">${t('popups.near')}: ${event.relatedHotspots.map(h => escapeHtml(h)).join(', ')}</div>`
+    const regionSection = event.region
+      ? `<div class="popup-stat"><span class="stat-label">${t('popups.region') || 'REGION'}</span><span class="stat-value">${escapeHtml(event.region)}</span></div>`
+      : '';
+
+    // Location subtitle: city + country + region
+    const locationParts: string[] = [];
+    if (event.city) locationParts.push(escapeHtml(event.city));
+    locationParts.push(escapeHtml(event.country));
+    const locationStr = locationParts.join(', ');
+
+    // Summary text (prefer summary over title, show truncated)
+    const summaryText = event.summary || event.title || '';
+    const summaryHtml = summaryText
+      ? `<p class="popup-description">${escapeHtml(summaryText.length > 300 ? summaryText.slice(0, 300) + '…' : summaryText)}</p>`
       : '';
 
     return `
-      <div class="popup-header protest ${severityClass}">
+      <div class="popup-header protest ${severityClass}${isEdas ? ' edas' : ''}">
         <span class="popup-icon">${icon}</span>
         <span class="popup-title">${eventTypeLabel}</span>
         <span class="popup-badge ${severityClass}">${severityLabel}</span>
+        ${sourceBadge}
         ${validatedBadge}
         <button class="popup-close" aria-label="Close">×</button>
       </div>
-      <div class="popup-body">
-        <div class="popup-subtitle">${event.city ? `${escapeHtml(event.city)}, ` : ''}${escapeHtml(event.country)}</div>
+      <div class="popup-body${isEdas ? ' popup-body-edas' : ''}">
+        <div class="popup-subtitle">${locationStr}</div>
         <div class="popup-stats">
           <div class="popup-stat">
             <span class="stat-label">${t('popups.time')}</span>
             <span class="stat-value">${event.time.toLocaleDateString()}</span>
           </div>
-          <div class="popup-stat">
-            <span class="stat-label">${t('popups.source')}</span>
-            <span class="stat-value">${sourceLabel}</span>
-          </div>
+          ${regionSection}
           ${fatalitiesSection}
           ${actorsSection}
         </div>
-        ${event.title ? `<p class="popup-description">${escapeHtml(event.title)}</p>` : ''}
+        ${summaryHtml}
         ${sourceLinks}
         ${tagsSection}
-        ${relatedHotspots}
+        ${isEdas ? `<button class="popup-btn edas-analysis-btn" data-edas-id="${escapeHtml(event.id)}">🔍 查看 EDAS 深度分析</button>` : ''}
       </div>
     `;
   }
@@ -1517,17 +1572,34 @@ export class MapPopup {
       return (typeOrder[a.eventType] ?? 5) - (typeOrder[b.eventType] ?? 5);
     });
 
+    // Detect if cluster contains EDAS events — use id prefix as primary signal
+    const edasItems = data.items.filter(e => {
+      const eid = String(e.id);
+      return eid.startsWith('edas:') || e.sourceType === 'edas' || (Array.isArray(e.sources) && e.sources.includes('edas'));
+    });
+    const firstEdasId = edasItems.length > 0 ? edasItems[0].id : null;
+
     const listItems = sortedItems.slice(0, 10).map(event => {
       const icon = event.eventType === 'riot' ? '🔥' : event.eventType === 'strike' ? '✊' : '📢';
       const sevClass = event.severity;
       const dateStr = event.time.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
       const city = event.city ? escapeHtml(event.city) : '';
-      const title = event.title ? `: ${escapeHtml(event.title.slice(0, 40))}${event.title.length > 40 ? '...' : ''}` : '';
+      const isEdasEvent = String(event.id).startsWith('edas:') || event.sourceType === 'edas' || (Array.isArray(event.sources) && event.sources.includes('edas'));
+      const edasBadge = isEdasEvent ? ' <span class="edas-dot" title="EDAS">◆</span>' : '';
+      const summarySnippet = event.summary
+        ? `: ${escapeHtml(event.summary.slice(0, 50))}${event.summary.length > 50 ? '…' : ''}`
+        : event.title
+        ? `: ${escapeHtml(event.title.slice(0, 40))}${event.title.length > 40 ? '…' : ''}`
+        : '';
       const sourceUrl = event.sourceUrls?.find(url => sanitizeUrl(url));
       const sourceLink = sourceUrl
         ? ` <a class="popup-link cluster-source-link" href="${sanitizeUrl(sourceUrl)}" target="_blank" rel="noopener noreferrer nofollow">${t('popups.source')} →</a>`
         : '';
-      return `<li class="cluster-item ${sevClass}">${icon} ${dateStr}${city ? ` • ${city}` : ''}${title}${sourceLink}</li>`;
+      // EDAS analysis link for individual items
+      const edasLink = isEdasEvent
+        ? ` <button class="popup-link edas-cluster-item-btn" data-edas-id="${escapeHtml(event.id)}">🔍 分析</button>`
+        : '';
+      return `<li class="cluster-item ${sevClass}${isEdasEvent ? ' edas-event' : ''}">${icon} ${dateStr}${city ? ` • ${city}` : ''}${edasBadge}${summarySnippet}${sourceLink}${edasLink}</li>`;
     }).join('');
 
     const renderedCount = Math.min(10, data.items.length);
@@ -1536,19 +1608,21 @@ export class MapPopup {
     const headerClass = highSeverity > 0 ? 'high' : riots > 0 ? 'medium' : 'low';
 
     return `
-      <div class="popup-header protest ${headerClass} cluster">
-        <span class="popup-title">📢 ${escapeHtml(data.country)}</span>
+      <div class="popup-header protest ${headerClass} cluster${edasItems.length > 0 ? ' edas' : ''}">
+        <span class="popup-title">📢 ${escapeHtml(data.country)}${edasItems.length > 0 ? ` ◆<span class="edas-count-badge">EDAS×${edasItems.length}</span>` : ''}</span>
         <span class="popup-badge">${totalCount} ${t('popups.events').toUpperCase()}</span>
         <button class="popup-close" aria-label="Close">×</button>
       </div>
-      <div class="popup-body cluster-popup">
+      <div class="popup-body cluster-popup${edasItems.length > 0 ? ' popup-body-edas' : ''}">
         <div class="cluster-summary">
           ${riots ? `<span class="summary-item riot">🔥 ${riots} ${t('popups.protest.riots')}</span>` : ''}
           ${highSeverity ? `<span class="summary-item high">⚠️ ${highSeverity} ${t('popups.protest.highSeverity')}</span>` : ''}
           ${verified ? `<span class="summary-item verified">✓ ${verified} ${t('popups.verified')}</span>` : ''}
           ${totalFatalities > 0 ? `<span class="summary-item fatalities">💀 ${totalFatalities} ${t('popups.fatalities')}</span>` : ''}
+          ${edasItems.length > 0 ? `<span class="summary-item edas-summary">🟣 EDAS ${edasItems.length}</span>` : ''}
         </div>
         <ul class="cluster-list">${listItems}${moreCount}</ul>
+        ${edasItems.length > 0 && firstEdasId ? `<button class="popup-btn edas-analysis-btn" data-edas-id="${escapeHtml(firstEdasId)}">🔍 查看 EDAS 深度分析 (${edasItems.length} 个事件)</button>` : ''}
         ${data.sampled ? `<p class="popup-more">${t('popups.sampledList', { count: data.items.length })}</p>` : ''}
       </div>
     `;

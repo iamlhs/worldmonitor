@@ -3146,3 +3146,568 @@ a.hub-top-story {
   color: var(--text-dim);
   font-size: 11px;
 }
+
+/* ==========================================================
+   EDAS 事件分析面板 — enhanced styles
+   ========================================================== */
+
+/* ── List View ── */
+.edas-analysis-host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.edas-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.edas-list-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.3px;
+}
+
+.edas-list-count {
+  font-size: 10px;
+  color: var(--text-muted);
+  background: var(--overlay-subtle);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.edas-list-subheader {
+  padding: 4px 12px 8px;
+  font-size: 9px;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.edas-list-rows {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.edas-row {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.edas-row:hover {
+  background: var(--surface-hover);
+}
+
+.edas-row-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 3px;
+}
+
+.edas-region-tag {
+  font-size: 9px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.edas-badge-bursty {
+  font-size: 8px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: color-mix(in srgb, #ff4444 15%, transparent);
+  color: #ff6666;
+  font-weight: 600;
+}
+
+.edas-badge-normal {
+  font-size: 8px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--semantic-normal) 10%, transparent);
+  color: var(--semantic-normal);
+}
+
+.edas-row-date {
+  font-size: 9px;
+  color: var(--text-dim);
+  margin-left: auto;
+}
+
+.edas-row-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.edas-row-summary {
+  font-size: 10px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin-bottom: 2px;
+}
+
+.edas-row-tags {
+  font-size: 8px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Detail View ── */
+.edas-detail {
+  padding: 0;
+  overflow-y: auto;
+  height: 100%;
+}
+
+.edas-back-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 10px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin: 8px 12px;
+  transition: all 0.12s;
+}
+
+.edas-back-btn:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.edas-detail-header {
+  padding: 0 12px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.edas-detail-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.edas-detail-badge {
+  font-size: 9px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+.edas-detail-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 4px;
+  line-height: 1.35;
+}
+
+.edas-detail-date {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+/* ── Sections ── */
+.edas-section {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.edas-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 8px;
+  letter-spacing: 0.4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.edas-subtitle {
+  font-size: 9px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.edas-summary-text {
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.edas-muted {
+  font-size: 10px;
+  color: var(--text-dim);
+  margin: 4px 0;
+}
+
+/* ── Stats Row ── */
+.edas-stats-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  padding: 8px 12px;
+  background: var(--overlay-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.edas-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 4px 8px;
+}
+
+.edas-stat-label {
+  font-size: 8px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.edas-stat-value {
+  font-size: 10px;
+  color: var(--text-secondary);
+  word-break: break-all;
+}
+
+/* ── Analysis Grid (bar chart + word cloud) ── */
+.edas-analysis-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.edas-analysis-col {
+  min-width: 0;
+}
+
+.edas-bar-chart {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.edas-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  min-height: 60px;
+}
+
+.edas-cloud-word {
+  transition: opacity 0.15s;
+  cursor: default;
+  color: var(--accent);
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.edas-cloud-word:hover {
+  opacity: 1 !important;
+  color: #b44aff;
+}
+
+/* ── KG Graph ── */
+.edas-kg-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.edas-kg-btn {
+  background: var(--overlay-subtle);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 9px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.12s;
+  font-family: inherit;
+}
+
+.edas-kg-btn:hover {
+  background: color-mix(in srgb, #b44aff 15%, transparent);
+  border-color: #b44aff66;
+  color: #d4a0ff;
+}
+
+.edas-graph-container {
+  width: 100%;
+  min-height: 200px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+  background: var(--bg);
+}
+
+.edas-graph-container svg {
+  display: block;
+}
+
+.edas-graph-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: var(--text-dim);
+  font-size: 10px;
+}
+
+.edas-graph-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.edas-graph-caption {
+  padding: 4px 8px;
+  font-size: 8px;
+  color: var(--text-dim);
+  background: var(--overlay-subtle);
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* ── Tweets ── */
+.edas-tweets {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.edas-tweet {
+  padding: 6px 8px;
+  background: var(--overlay-subtle);
+  border-radius: 4px;
+  border-left: 2px solid #b44aff44;
+}
+
+.edas-tweet-text {
+  font-size: 10px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+  margin-bottom: 2px;
+  word-break: break-word;
+}
+
+.edas-tweet-meta {
+  font-size: 8px;
+  color: var(--text-dim);
+}
+
+/* ── Asset List ── */
+.edas-asset-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.edas-asset-list li {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 0;
+  font-size: 10px;
+}
+
+.edas-asset-list a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.edas-asset-list a:hover {
+  text-decoration: underline;
+}
+
+.edas-asset-icon {
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.edas-external-link {
+  display: inline-block;
+  padding: 6px 14px;
+  background: color-mix(in srgb, #b44aff 12%, transparent);
+  color: #d4a0ff;
+  border: 1px solid #b44aff44;
+  border-radius: 4px;
+  font-size: 10px;
+  text-decoration: none;
+  transition: all 0.12s;
+}
+
+.edas-external-link:hover {
+  background: color-mix(in srgb, #b44aff 20%, transparent);
+  border-color: #b44aff88;
+}
+
+/* ==========================================================
+   EDAS Full-Screen Overlay (右側全高弹窗)
+   ========================================================== */
+.edas-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  justify-content: flex-end;
+  pointer-events: none;
+}
+
+.edas-overlay.open {
+  pointer-events: auto;
+}
+
+.edas-overlay-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.edas-overlay.open .edas-overlay-backdrop {
+  opacity: 1;
+}
+
+.edas-overlay-panel {
+  position: relative;
+  width: 45vw;
+  max-width: 720px;
+  height: 100vh;
+  background: var(--bg, #1a1a2e);
+  border-left: 1px solid var(--border, #333);
+  box-shadow: -8px 0 40px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.edas-overlay.open .edas-overlay-panel {
+  transform: translateX(0);
+}
+
+.edas-overlay-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 10;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+
+.edas-overlay-close:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.edas-overlay-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px 40px;
+}
+
+/* Overlay-specific overrides for larger display */
+.edas-overlay-content .edas-detail-title {
+  font-size: 20px;
+}
+
+.edas-overlay-content .edas-summary-text {
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.edas-overlay-content .edas-section-title {
+  font-size: 13px;
+}
+
+.edas-overlay-content .edas-stat-label {
+  font-size: 9px;
+}
+
+.edas-overlay-content .edas-stat-value {
+  font-size: 12px;
+}
+
+.edas-overlay-content .edas-analysis-grid {
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.edas-overlay-content .edas-bar-chart {
+  width: 100%;
+}
+
+.edas-overlay-content .edas-graph-container {
+  min-height: 420px;
+}
+
+.edas-overlay-content .edas-graph-container svg {
+  min-height: 400px;
+}
+
+.edas-overlay-content .edas-cloud-word {
+  margin: 6px 10px;
+}
+
+.edas-overlay-content .edas-subtitle {
+  font-size: 10px;
+}
+
+.edas-overlay-content .edas-tweet-text {
+  font-size: 12px;
+}
+
+.edas-overlay-content .edas-kg-btn {
+  font-size: 10px;
+  padding: 4px 10px;
+}
+
+.edas-overlay-content .edas-asset-list li {
+  font-size: 11px;
+}
+
+.edas-overlay-content .edas-muted {
+  font-size: 11px;
+}
+
+.edas-overlay-content .edas-stats-row {
+  grid-template-columns: repeat(4, 1fr);
+}

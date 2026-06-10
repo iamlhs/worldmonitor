@@ -1209,6 +1209,20 @@ export class DeckGLMap {
         timeMs: p.time.getTime(),
       },
     }));
+
+    if (import.meta.env.DEV) {
+      try {
+        const edasEvents = source.filter((e) => e.sourceType === 'edas');
+        console.log(`[DeckGLMap] rebuildProtestSupercluster: totalEvents=${source.length}, edasEvents=${edasEvents.length}`);
+        console.log('[DeckGLMap] sample edas events', edasEvents.slice(0, 10).map(e => ({ id: e.id, lat: e.lat, lon: e.lon, title: e.title, sourceType: e.sourceType })));
+        console.log('[DeckGLMap] sample points (first 10)', points.slice(0, 10));
+        const missingCoords = source.filter((e) => !Number.isFinite(e.lat) || !Number.isFinite(e.lon) || (e.lat === 0 && e.lon === 0));
+        console.log(`[DeckGLMap] events missing/zero coords: ${missingCoords.length}`, missingCoords.slice(0, 10).map(e => ({ id: e.id, title: e.title, lat: e.lat, lon: e.lon, sourceType: e.sourceType })));
+      } catch (err) {
+        console.log('[DeckGLMap] rebuildProtestSupercluster: debug logging failed', err);
+      }
+    }
+
     this.protestSC = new Supercluster({
       radius: 60,
       maxZoom: 14,
@@ -1221,6 +1235,7 @@ export class DeckGLMap {
         verifiedCount: props.validated ? 1 : 0,
         totalFatalities: Number(props.fatalities ?? 0) || 0,
         riotTimeMs: props.eventType === 'riot' && props.sourceType !== 'gdelt' && Number.isFinite(Number(props.timeMs)) ? Number(props.timeMs) : 0,
+        edasCount: props.sourceType === 'edas' ? 1 : 0,
       }),
       reduce: (acc: Record<string, unknown>, props: Record<string, unknown>) => {
         acc.maxSeverityRank = Math.max(Number(acc.maxSeverityRank ?? 0), Number(props.maxSeverityRank ?? 0));
@@ -1228,6 +1243,7 @@ export class DeckGLMap {
         acc.highSeverityCount = Number(acc.highSeverityCount ?? 0) + Number(props.highSeverityCount ?? 0);
         acc.verifiedCount = Number(acc.verifiedCount ?? 0) + Number(props.verifiedCount ?? 0);
         acc.totalFatalities = Number(acc.totalFatalities ?? 0) + Number(props.totalFatalities ?? 0);
+        acc.edasCount = Number(acc.edasCount ?? 0) + Number(props.edasCount ?? 0);
         const accRiot = Number(acc.riotTimeMs ?? 0);
         const propRiot = Number(props.riotTimeMs ?? 0);
         acc.riotTimeMs = Number.isFinite(propRiot) ? Math.max(accRiot, propRiot) : accRiot;
@@ -1358,7 +1374,7 @@ export class DeckGLMap {
     const layers = this.state.layers;
     const useProtests = layers.protests && this.protestSuperclusterSource.length > 0;
     const useTechHQ = SITE_VARIANT === 'tech' && layers.techHQs;
-    const useTechEvents = SITE_VARIANT === 'tech' && layers.techEvents && this.techEvents.length > 0;
+    const useTechEvents = (layers.techEvents || this.techEvents.length > 0) && this.techEvents.length > 0;
     const useDatacenterClusters = layers.datacenters && zoom < 5;
     const layerMask = `${Number(useProtests)}${Number(useTechHQ)}${Number(useTechEvents)}${Number(useDatacenterClusters)}`;
     if (zoom === this.lastSCZoom && boundsKey === this.lastSCBoundsKey && layerMask === this.lastSCMask) return;
@@ -1382,6 +1398,7 @@ export class DeckGLMap {
           const totalFatalities = Number(props.totalFatalities ?? 0);
           const clusterCount = Number(f.properties.point_count ?? 0);
           const riotTimeMs = Number(props.riotTimeMs ?? 0);
+          const edasCount = Number(props.edasCount ?? 0);
           return {
             id: `pc-${f.properties.cluster_id}`,
             _clusterId: f.properties.cluster_id!,
@@ -1391,6 +1408,8 @@ export class DeckGLMap {
             country: String(props.country ?? ''),
             maxSeverity: maxSev as 'low' | 'medium' | 'high',
             hasRiot: riotCount > 0,
+            hasEdas: edasCount > 0,
+            edasCount,
             latestRiotEventTimeMs: riotTimeMs || undefined,
             totalFatalities,
             riotCount,
@@ -1403,7 +1422,7 @@ export class DeckGLMap {
         return {
           id: `pp-${f.properties.index}`, lat: item.lat, lon: item.lon,
           count: 1, items: [item], country: item.country,
-          maxSeverity: item.severity, hasRiot: item.eventType === 'riot',
+          maxSeverity: item.severity, hasRiot: item.eventType === 'riot', hasEdas: item.sourceType === 'edas' || (item.id && String(item.id).startsWith('edas:')),
           latestRiotEventTimeMs:
             item.eventType === 'riot' && item.sourceType !== 'gdelt' && Number.isFinite(item.time.getTime())
               ? item.time.getTime()
@@ -1932,9 +1951,11 @@ export class DeckGLMap {
       if (mapLayers.cloudRegions) {
         layers.push(this.createCloudRegionsLayer());
       }
-      if (mapLayers.techEvents && this.techEvents.length > 0) {
-        layers.push(...this.createTechEventClusterLayers());
-      }
+    }
+
+    // Tech events: show in all variants when we have events or layer enabled
+    if ((mapLayers.techEvents || this.techEvents.length > 0) && this.techEvents.length > 0) {
+      layers.push(...this.createTechEventClusterLayers());
     }
 
     // Gulf FDI investments layer
@@ -3601,11 +3622,14 @@ export class DeckGLMap {
       radiusMinPixels: 6,
       radiusMaxPixels: 22,
       getFillColor: d => {
+        // If cluster contains EDAS items, render purple to highlight EDAS source
+        if ((d as any).hasEdas) return [180, 82, 255, 220] as [number, number, number, number];
         if (d.hasRiot) return [220, 40, 40, 200] as [number, number, number, number];
         if (d.maxSeverity === 'high') return [255, 80, 60, 180] as [number, number, number, number];
         if (d.maxSeverity === 'medium') return [255, 160, 40, 160] as [number, number, number, number];
         return [255, 220, 80, 140] as [number, number, number, number];
       },
+      
       pickable: true,
       updateTriggers: { getRadius: this.lastSCZoom, getFillColor: this.lastSCZoom },
     }));
@@ -4326,7 +4350,7 @@ export class DeckGLMap {
       case 'protest-clusters-layer':
         if (obj.count === 1) {
           const item = obj.items?.[0];
-          return { html: `<div class="deckgl-tooltip"><strong>${text(item?.title || t('components.deckgl.tooltip.protest'))}</strong><br/>${text(item?.city || item?.country || '')}</div>` };
+          return { html: `<div class="deckgl-tooltip"><strong>${text(item?.title || t('components.deckgl.tooltip.protest'))}${item?.sourceType === 'edas' || (item?.id && String(item.id).startsWith('edas:')) ? ' <span style="color:#b452ff;font-weight:700;margin-left:6px">EDAS</span>' : ''}</strong><br/>${text(item?.city || item?.country || '')}</div>` };
         }
         return { html: `<div class="deckgl-tooltip"><strong>${t('components.deckgl.tooltip.protestsCount', { count: String(obj.count) })}</strong><br/>${text(obj.country)}</div>` };
       case 'tech-hq-clusters-layer':
@@ -6127,7 +6151,16 @@ export class DeckGLMap {
 
   public setProtests(events: SocialUnrestEvent[]): void {
     this.protests = events;
-    this.rebuildProtestSupercluster();
+    if (import.meta.env.DEV) {
+      try {
+        const edasCount = events.filter((e) => e.sourceType === 'edas').length;
+        console.log(`[DeckGLMap] setProtests: events=${events.length}, edas=${edasCount}`);
+      } catch (err) {
+        console.log('[DeckGLMap] setProtests: failed to compute edasCount', err);
+      }
+    }
+    // Use the unfiltered snapshot so EDAS events aren't excluded by the current timeRange
+    this.rebuildProtestSupercluster(events);
     this.render();
     this.syncPulseAnimation();
   }
