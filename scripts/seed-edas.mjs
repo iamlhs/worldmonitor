@@ -79,10 +79,9 @@ function locationJitter(seed, range = 0.8) {
   return { latitude: latOff, longitude: lonOff };
 }
 
-/** Extract city/place name from summary text */
-function extractCityFromSummary(summary, country) {
-  if (!summary) return null;
-  const lower = summary.toLowerCase();
+/** Extract city/place name from summary text AND tags */
+function extractCityFromSummary(summary, country, tags) {
+  const searchText = ((summary || '') + ' ' + (Array.isArray(tags) ? tags.join(' ') : '')).toLowerCase();
   const patterns = country === 'Iran'
     ? [
         ['tehran', ['tehran', 'shahriar']],
@@ -122,7 +121,7 @@ function extractCityFromSummary(summary, country) {
       ]
     : [];
   for (const [name, keywords] of patterns) {
-    if (keywords.some(k => lower.includes(k))) return name;
+    if (keywords.some(k => searchText.includes(k))) return name;
   }
   return null;
 }
@@ -206,8 +205,8 @@ function mapEvent(e) {
   // Classify event type and target layer
   const [eventType, targetLayer, categoryTag] = classifyEvent(summary, tags, e.region || '');
 
-  // Detect city from summary
-  const city = extractCityFromSummary(summary, country) || '';
+  // Detect city from summary + tags
+  const city = extractCityFromSummary(summary, country, tags) || '';
 
   // Infer location
   const inferred = inferLocation(tags, summary, country);

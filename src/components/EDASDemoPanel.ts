@@ -376,30 +376,59 @@ export class EDASDemoPanel extends Panel {
 
       <div class="edas-section">
         <div class="edas-section-title">🔗 知识图谱 (KG)</div>
-        <p class="edas-muted">点击下方文件加载对应知识图谱的力导向图可视化</p>
-        <div class="edas-kg-toolbar">
-          ${assets.filter((a: string) => a.includes('KG') || a.includes('kg') || a.includes('chain')).map((p: string) =>
-            `<button class="edas-kg-btn" data-kg-file="${escapeHtml(p)}" data-kg-container="${kgContainerId}">${escapeHtml(p)}</button>`
-          ).join('')}
+        <p class="edas-muted">
+          以下知识图谱文件是全局数据集，<b>不随当前事件改变</b>。它们展示的是独立的知识体系（政治人物关系、卫星任务链等），用于辅助理解事件背后的宏观关联网络。
+          节点间的连线上标注了关系类型（如 Vicepresident、Previousmission），悬停节点可高亮其相邻关系：
+        </p>
+        <div class="edas-kg-toolbar" style="flex-direction:column;gap:4px">
+          ${assets.filter((a: string) => a.includes('KG') || a.includes('kg') || a.includes('chain')).map((p: string) => {
+            const meta = EDASDemoPanel.KG_DESCRIPTIONS[p] || { icon: '📄', label: p, desc: '知识图谱数据文件' };
+            return `<button class="edas-kg-card" data-kg-file="${escapeHtml(p)}" data-kg-container="${kgContainerId}">
+              <span class="edas-kg-card-icon">${meta.icon}</span>
+              <span class="edas-kg-card-info">
+                <span class="edas-kg-card-name">${escapeHtml(p)}</span>
+                <span class="edas-kg-card-label">${escapeHtml(meta.label)}</span>
+                <span class="edas-kg-card-desc">${escapeHtml(meta.desc)}</span>
+              </span>
+            </button>`;
+          }).join('')}
         </div>
         <div id="${kgContainerId}" class="edas-graph-container">
-          <div class="edas-graph-placeholder">选择一个 KG 文件加载可视化</div>
+          <div class="edas-graph-placeholder">点击上方文件加载知识图谱</div>
         </div>
       </div>
 
       <div class="edas-section">
         <div class="edas-section-title">👥 人物关系链</div>
-        <p class="edas-muted">从人物关系数据中加载力导向图</p>
-        <div class="edas-kg-toolbar">
-          ${assets.filter((a: string) => a.includes('people')).map((p: string) =>
-            `<button class="edas-kg-btn" data-kg-file="${escapeHtml(p)}" data-kg-container="${chainContainerId}">${escapeHtml(p)}</button>`
-          ).join('')}
-          ${assets.filter((a: string) => /^chain\d/.test(a)).map((p: string) =>
-            `<button class="edas-kg-btn" data-kg-file="${escapeHtml(p)}" data-kg-container="${chainContainerId}">${escapeHtml(p)}</button>`
-          ).join('')}
+        <p class="edas-muted">
+          人物网络数据（GEXF / JSON 格式），同样是全局数据集。节点为人名，连线上的文字标明人物间的关系类型：
+        </p>
+        <div class="edas-kg-toolbar" style="flex-direction:column;gap:4px">
+          ${assets.filter((a: string) => a.includes('people')).map((p: string) => {
+            const meta = EDASDemoPanel.KG_DESCRIPTIONS[p] || { icon: '👥', label: p.replace('.gexf',''), desc: '人物关系图谱' };
+            return `<button class="edas-kg-card" data-kg-file="${escapeHtml(p)}" data-kg-container="${chainContainerId}">
+              <span class="edas-kg-card-icon">${meta.icon}</span>
+              <span class="edas-kg-card-info">
+                <span class="edas-kg-card-name">${escapeHtml(p)}</span>
+                <span class="edas-kg-card-label">${escapeHtml(meta.label)}</span>
+                <span class="edas-kg-card-desc">${escapeHtml(meta.desc)}</span>
+              </span>
+            </button>`;
+          }).join('')}
+          ${assets.filter((a: string) => /^chain\d/.test(a)).map((p: string) => {
+            const meta = EDASDemoPanel.KG_DESCRIPTIONS[p] || { icon: '🏛️', label: '政治关系链', desc: '政治人物权力继承关系' };
+            return `<button class="edas-kg-card" data-kg-file="${escapeHtml(p)}" data-kg-container="${chainContainerId}">
+              <span class="edas-kg-card-icon">${meta.icon}</span>
+              <span class="edas-kg-card-info">
+                <span class="edas-kg-card-name">${escapeHtml(p)}</span>
+                <span class="edas-kg-card-label">${escapeHtml(meta.label)}</span>
+                <span class="edas-kg-card-desc">${escapeHtml(meta.desc)}</span>
+              </span>
+            </button>`;
+          }).join('')}
         </div>
         <div id="${chainContainerId}" class="edas-graph-container">
-          <div class="edas-graph-placeholder">选择一个人物数据文件加载可视化</div>
+          <div class="edas-graph-placeholder">点击上方文件加载网络</div>
         </div>
       </div>
 
@@ -418,6 +447,16 @@ export class EDASDemoPanel extends Panel {
       </div>
     </div>`;
   }
+
+  // ───── KG File Descriptions ─────
+  // These files are global knowledge bases, not specific to any event/region.
+  private static readonly KG_DESCRIPTIONS: Record<string, { icon: string; label: string; desc: string }> = {
+    'chain1.json':     { icon: '🏛️', label: '美国政治权力链', desc: '特朗普至佩洛西等美国政界人物的权力继承与上下级关系（President→Vicepresident→Successor→Deputy→Governor）' },
+    'chain2.json':     { icon: '🏛️', label: '美国政治权力链', desc: '与 chain1.json 内容相同，美国政治人物权力继承关系图谱' },
+    'chain_kg.json':   { icon: '🛰️', label: 'NOAA 卫星任务链', desc: '1970年代 NOAA/ITOS/TIROS 气象卫星的前序与后续任务时序链（Previousmission→Nextmission）' },
+    'chain_kg_1.json': { icon: '🏛️', label: '奥巴马政治关系网', desc: '奥巴马及其政治网络（拜登、克里、格拉斯利等参议院人物）的 President/Vicepresident/Successor 关系' },
+    'KG_chain.json':   { icon: '🛰️', label: 'NOAA 卫星任务链', desc: '与 chain_kg.json 内容相同，NOAA/ITOS/TIROS 气象卫星任务时序链' },
+  };
 
   // ───── Inline SVG Bar Chart ─────
 
@@ -514,13 +553,31 @@ export class EDASDemoPanel extends Panel {
     fileName: string,
   ): void {
     container.innerHTML = '';
-    const isLarge = nodes.length > 60;
-    const width = container.clientWidth || 480;
-    // Scale height with node count for large graphs
-    const height = isLarge
-      ? Math.min(600, Math.max(400, nodes.length * 3.5))
-      : Math.max(360, Math.min(500, nodes.length * 5 + 200));
 
+    // ── 1. Determine canvas size ──
+    const n = nodes.length;
+    const isLarge = n > 60;
+    const width = Math.max(container.clientWidth || 480, 420);
+    // For large graphs use a much bigger canvas so nodes have room to spread
+    const height = isLarge
+      ? Math.min(700, Math.max(480, n * 3))
+      : Math.max(360, Math.min(500, n * 6 + 200));
+
+    const cx = width / 2;
+    const cy = height / 2;
+    const radius = Math.min(cx, cy) * 0.85;
+
+    // ── 2. Set initial positions in a circle so nodes NEVER start clustered ──
+    const simNodes = nodes.map((d, i) => ({
+      ...d,
+      // Evenly distribute around a circle to avoid initial clustering
+      x: cx + radius * Math.cos((2 * Math.PI * i) / n),
+      y: cy + radius * Math.sin((2 * Math.PI * i) / n),
+    }));
+
+    const simEdges = edges.map((e) => ({ ...e }));
+
+    // ── 3. Build SVG ──
     const svg = d3.select(container)
       .append('svg')
       .attr('width', '100%')
@@ -528,154 +585,127 @@ export class EDASDemoPanel extends Panel {
       .attr('viewBox', `0 0 ${width} ${height}`)
       .style('background', 'transparent');
 
-    // Add zoom behavior with mouse wheel
     const g = svg.append('g');
-    svg.call(
-      d3.zoom<SVGSVGElement, unknown>()
-        .scaleExtent([0.05, 20])
-        .on('zoom', (event) => {
-          g.attr('transform', event.transform);
-        }),
-    );
+    const zoom = d3.zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.02, 40])
+      .on('zoom', (event) => { g.attr('transform', event.transform); });
+    svg.call(zoom);
 
-    // Scale force parameters to prevent node clustering.
-    // For large graphs, use STRONG charge repulsion so nodes spread out.
-    // Skip center force for large graphs — it pulls everything into a tight
-    // cluster and charge can't overcome it with many nodes.
-    const nodeCount = nodes.length;
-    const edgeCount = edges.length;
+    // ── 4. Force parameters ──
+    // Strong charge so nodes push apart; no center force so they spread
+    // naturally. The circular start positions already keep them separated.
+    const chargeStrength = n > 200 ? -400 : n > 100 ? -250 : n > 50 ? -150 : -300;
+    const linkDist = edges.length > 200 ? 60 : edges.length > 50 ? 80 : 120;
+    const alphaDecay = n > 200 ? 0.01 : n > 50 ? 0.02 : 0.03;
 
-    // Charge must scale with node count: weak for small, VERY strong for large
-    const chargeStrength = nodeCount > 200 ? -800 : nodeCount > 100 ? -500 : nodeCount > 50 ? -250 : -300;
-    const linkDistance = edgeCount > 200 ? 80 : edgeCount > 50 ? 100 : 140;
-    const collideRadius = nodeCount > 200 ? 8 : nodeCount > 50 ? 15 : 25;
-    // Slower decay = more iterations = better spreading
-    const alphaDecay = nodeCount > 200 ? 0.008 : nodeCount > 50 ? 0.015 : 0.02;
-    // Initial alpha — start high for large graphs to give more time
-    const alphaInit = nodeCount > 200 ? 1.0 : 0.5;
-
-    // Use very weak center force for large graphs (just enough to keep from
-    // drifting off-screen), strong center for small graphs.
-    const centerStrength = nodeCount > 200 ? 0.01 : nodeCount > 50 ? 0.05 : 0.1;
-
-    const simulation = d3.forceSimulation(nodes.map((n) => ({ ...n })) as any)
+    const simulation = d3.forceSimulation(simNodes)
       .alphaDecay(alphaDecay)
-      .alpha(alphaInit)
-      .force('link', d3.forceLink(edges.map((e) => ({ ...e })) as any)
+      .alpha(0.4)
+      .force('link', d3.forceLink(simEdges)
         .id((d: any) => d.id)
-        .distance(linkDistance))
+        .distance(linkDist))
       .force('charge', d3.forceManyBody().strength(chargeStrength))
-      .force('center', d3.forceCenter(width / 2, height / 2).strength(centerStrength))
-      .force('collision', d3.forceCollide().radius(collideRadius));
+      .force('collision', d3.forceCollide().radius(n > 200 ? 5 : n > 50 ? 10 : 18));
 
-    const nodeGroup = g.append('g').attr('class', 'edas-graph-nodes');
-    const linkGroup = g.append('g').attr('class', 'edas-graph-links');
+    // ── 5. Draw elements ──
+    const linkGroup = g.append('g');
+    const nodeGroup = g.append('g');
+
+    // ── Color edges by relationship type ──
+    const relColors: Record<string, string> = {
+      'president': '#ff6688', 'vicepresident': '#ff8888',
+      'successor': '#66ccff', 'predecessor': '#66ffaa',
+      'governor': '#ffaa44', 'deputy': '#ffcc44', 'leader': '#ff8844',
+      'lieutenant': '#88ddff',
+      'previousmission': '#88aaff', 'nextmission': '#88ffcc',
+    };
+    function edgeColor(val: string | number | undefined): string {
+      const v = String(val ?? '').toLowerCase().replace(/[\d]/g, '');
+      for (const [key, color] of Object.entries(relColors)) {
+        if (v.includes(key)) return color;
+      }
+      return isLarge ? '#7766aa' : '#8866cc';
+    }
 
     const link = linkGroup
       .selectAll('line')
-      .data(edges)
+      .data(simEdges)
       .enter()
       .append('line')
-      .attr('stroke', 'var(--border, #555)')
-      .attr('stroke-width', isLarge ? 0.4 : 0.6)
-      .attr('stroke-opacity', isLarge ? 0.15 : 0.3);
+      .attr('stroke', (d: any) => edgeColor(d.value))
+      .attr('stroke-width', isLarge ? 1.0 : 1.5)
+      .attr('stroke-opacity', isLarge ? 0.4 : 0.55);
+
+    // ── Edge labels showing relationship type ──
+    const linkText = linkGroup
+      .selectAll('text')
+      .data(simEdges)
+      .enter()
+      .append('text')
+      .text((d: any) => {
+        const v = String(d.value ?? '');
+        return v.length > 14 ? v.slice(0, 12) + '…' : v;
+      })
+      .attr('font-size', isLarge ? 4.5 : 7)
+      .attr('fill', (d: any) => edgeColor(d.value))
+      .attr('stroke', 'var(--bg)')
+      .attr('stroke-width', 1.5)
+      .attr('paint-order', 'stroke')
+      .attr('text-anchor', 'middle')
+      .attr('font-family', 'sans-serif')
+      .attr('font-weight', 600)
+      .attr('pointer-events', 'none');
 
     const node = nodeGroup
       .selectAll('g')
-      .data(nodes)
+      .data(simNodes)
       .enter()
       .append('g')
       .attr('cursor', 'pointer')
-      .call(
-        d3.drag<SVGGElement, any>()
-          .on('start', (event, d) => {
-            if (!event.active) simulation.alphaTarget(0.3).restart();
-            d.fx = d.x;
-            d.fy = d.y;
-          })
-          .on('drag', (event, d) => {
-            d.fx = event.x;
-            d.fy = event.y;
-          })
-          .on('end', (event, d) => {
-            if (!event.active) simulation.alphaTarget(0);
-            d.fx = null;
-            d.fy = null;
-          }),
+      .call(d3.drag<SVGGElement, any>()
+        .on('start', (event, d) => {
+          if (!event.active) simulation.alphaTarget(0.3).restart();
+          d.fx = d.x; d.fy = d.y;
+        })
+        .on('drag', (event, d) => { d.fx = event.x; d.fy = event.y; })
+        .on('end', (event, d) => {
+          if (!event.active) simulation.alphaTarget(0);
+          d.fx = null; d.fy = null;
+        }),
       );
 
-    const nodeRadius = isLarge ? 3 : 5;
-    const fontSize = isLarge ? 6 : 8;
-    const labelOffset = isLarge ? 5 : 9;
-
+    const r = isLarge ? 3.5 : 5;
     node.append('circle')
-      .attr('r', nodeRadius)
-      .attr('fill', '#b44aff')
-      .attr('stroke', 'var(--bg, #1a1a2e)')
-      .attr('stroke-width', 1);
+      .attr('r', r)
+      .attr('fill', '#c770ff')
+      .attr('stroke', '#ffffff44')
+      .attr('stroke-width', 1.2);
 
-    // For small graphs: always show labels. For large graphs: show on hover only.
-    const textEl = node.append('text')
+    // Labels — hidden on large graphs, shown on hover
+    const text = node.append('text')
       .text((d: any) => {
         const label = d.name || d.label || d.id;
         return label.length > 14 ? label.slice(0, 12) + '…' : label;
       })
-      .attr('x', labelOffset)
+      .attr('x', isLarge ? 5 : 8)
       .attr('y', 3)
-      .attr('font-size', fontSize)
-      .attr('fill', '#e0d0ff')
-      .attr('stroke', 'var(--bg, #1a1a2e)')
-      .attr('stroke-width', isLarge ? 1.5 : 2.5)
+      .attr('font-size', isLarge ? 6.5 : 9)
+      .attr('fill', '#ffffff')
+      .attr('stroke', '#000000')
+      .attr('stroke-width', 3)
       .attr('paint-order', 'stroke')
       .attr('font-family', 'sans-serif')
-      .attr('font-weight', 500)
+      .attr('font-weight', 600)
       .attr('pointer-events', 'none');
 
-    // For large graphs: hide text by default, show on hover
     if (isLarge) {
-      textEl.attr('opacity', 0);
-      node.on('mouseenter', function () {
-        d3.select(this).select('text').attr('opacity', 1);
-      });
-      node.on('mouseleave', function () {
-        d3.select(this).select('text').attr('opacity', 0);
-      });
+      text.attr('opacity', 0);
     }
-
-    // Hover highlight: enlarge connected nodes
-    node.on('mouseenter', function (event: any, d: any) {
-      const connected = new Set<string | number>();
-      edges.forEach((e) => {
-        const sId = typeof e.source === 'object' ? (e.source as any).id : e.source;
-        const tId = typeof e.target === 'object' ? (e.target as any).id : e.target;
-        if (sId === d.id) connected.add(tId);
-        if (tId === d.id) connected.add(sId);
-      });
-      node.each(function (nd: any) {
-        const el = d3.select(this);
-        if (nd.id === d.id) {
-          el.select('circle').attr('fill', '#ff88ff').attr('r', nodeRadius * 1.6);
-        } else if (connected.has(nd.id)) {
-          el.select('circle').attr('fill', '#cc66ff').attr('r', nodeRadius * 1.3);
-          el.select('text')?.attr('opacity', isLarge ? 0.6 : 1);
-        } else if (isLarge) {
-          el.attr('opacity', 0.2);
-        }
-      });
-    });
-
-    node.on('mouseleave', function () {
-      node.each(function (nd: any) {
-        const el = d3.select(this);
-        el.attr('opacity', 1);
-        el.select('circle').attr('fill', '#b44aff').attr('r', nodeRadius);
-        if (isLarge) el.select('text')?.attr('opacity', 0);
-      });
-    });
 
     node.append('title')
       .text((d: any) => d.name || d.label || d.id);
 
+    // ── 6. Tick — update link positions AND edge label positions ──
     simulation.on('tick', () => {
       link
         .attr('x1', (d: any) => d.source.x)
@@ -683,26 +713,73 @@ export class EDASDemoPanel extends Panel {
         .attr('x2', (d: any) => d.target.x)
         .attr('y2', (d: any) => d.target.y);
 
+      linkText
+        .attr('x', (d: any) => (d.source.x + d.target.x) / 2)
+        .attr('y', (d: any) => (d.source.y + d.target.y) / 2);
+
       node.attr('transform', (d: any) => `translate(${d.x},${d.y})`);
     });
 
-    // Auto-zoom to fit after simulation settles
-    setTimeout(() => {
-      const bounds = (svg.node() as SVGSVGElement)?.getBBox();
-      if (bounds && bounds.width > 0) {
-        const padding = 40;
-        const scale = Math.min(width / (bounds.width + padding), height / (bounds.height + padding));
-        if (scale < 1) {
-          const cx = bounds.x + bounds.width / 2;
-          const cy = bounds.y + bounds.height / 2;
-          g.attr('transform', `translate(${width / 2 - cx * scale},${height / 2 - cy * scale}) scale(${scale})`);
-        }
-      }
-    }, isLarge ? 4000 : 2000);
+    // ── 7. Interaction ──
+    node.on('mouseenter', function (ev: any, d: any) {
+      // Highlight this node
+      d3.select(this).select('circle').attr('fill', '#ff66ff').attr('r', r * 1.8).attr('stroke', '#ffffff88').attr('stroke-width', 2);
+      d3.select(this).select('text').attr('opacity', 1);
 
-    // File caption
+      // Find neighbours
+      const nbrs = new Set<string>();
+      simEdges.forEach((e: any) => {
+        const s = typeof e.source === 'object' ? e.source.id : e.source;
+        const t = typeof e.target === 'object' ? e.target.id : e.target;
+        if (s === d.id) nbrs.add(t);
+        if (t === d.id) nbrs.add(s);
+      });
+
+      // Dim non-connected edge labels
+      linkText.attr('opacity', (ed: any) => {
+        const s = typeof ed.source === 'object' ? ed.source.id : ed.source;
+        const t = typeof ed.target === 'object' ? ed.target.id : ed.target;
+        return (s === d.id || t === d.id) ? 1 : 0.15;
+      });
+
+      node.each(function (nd: any) {
+        const el = d3.select(this);
+        if (nd.id === d.id) return;
+        if (nbrs.has(nd.id)) {
+          el.select('circle').attr('fill', '#da88ff').attr('r', r * 1.4).attr('stroke', '#ffffff66').attr('stroke-width', 1.5);
+          el.select('text').attr('opacity', 1);
+        } else if (isLarge) {
+          el.attr('opacity', 0.25);
+        }
+      });
+    });
+
+    node.on('mouseleave', function () {
+      linkText.attr('opacity', 1);
+      node.each(function () {
+        const el = d3.select(this);
+        el.attr('opacity', 1);
+        el.select('circle').attr('fill', '#c770ff').attr('r', r).attr('stroke', '#ffffff44').attr('stroke-width', 1.2);
+        if (isLarge) el.select('text').attr('opacity', 0);
+      });
+    });
+
+    // ── 8. Zoom to fit when simulation ends ──
+    simulation.on('end', () => {
+      const bbox = (g.node() as SVGGElement)?.getBBox();
+      if (!bbox || bbox.width === 0) return;
+      const pad = 50;
+      const s = Math.min(width / (bbox.width + pad), height / (bbox.height + pad), 2);
+      const tx = width / 2 - (bbox.x + bbox.width / 2) * s;
+      const ty = height / 2 - (bbox.y + bbox.height / 2) * s;
+      g.transition().duration(400).attr('transform', `translate(${tx},${ty}) scale(${s})`);
+    });
+
+    // ── 9. Caption ──
+    // Count unique relationship types
+    const relTypes = new Set(edges.map((e: any) => String(e.value ?? '')).filter(Boolean));
     d3.select(container).append('div')
       .attr('class', 'edas-graph-caption')
-      .text(`📁 ${fileName} · ${nodes.length} 节点 · ${edges.length} 连接 · ${isLarge ? '🖱️ 悬停查看标签' : '🖱️ 拖拽/滚轮'}`);
+      .text(`📁 ${fileName} · ${n} 节点 · ${edges.length} 连接 · ${relTypes.size} 种关系类型${isLarge ? ' · 🖱️ 悬停显示标签' : ''}`);
   }
 }

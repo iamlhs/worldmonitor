@@ -163,10 +163,9 @@ export async function listUnrestEvents(
             return { latitude: latOff, longitude: lonOff };
           }
 
-          /** Extract city/place name from summary text */
-          function extractCityFromSummary(summary: string, country: string): string | undefined {
-            if (!summary) return undefined;
-            const lower = summary.toLowerCase();
+          /** Extract city/place name from summary text AND tags */
+          function extractCityFromSummary(summary: string, country: string, tags?: string[]): string | undefined {
+            const searchText = ((summary || '') + ' ' + (Array.isArray(tags) ? tags.join(' ') : '')).toLowerCase();
             // Iran city keywords in priority order
             const iranCityPatterns: Array<{ name: string; keywords: string[] }> = [
               { name: 'tehran', keywords: ['tehran', 'shahriar'] },
@@ -184,10 +183,19 @@ export async function listUnrestEvents(
               { name: 'urmia', keywords: ['urmia'] },
               { name: 'bandar abbas', keywords: ['bandar abbas'] },
               { name: 'yazd', keywords: ['yazd'] },
+              { name: 'bushehr', keywords: ['bushehr'] },
+              { name: 'gorgan', keywords: ['gorgan'] },
+              { name: 'arak', keywords: ['arak'] },
+              { name: 'ardabil', keywords: ['ardabil'] },
+              { name: 'sari', keywords: ['sari'] },
+              { name: 'hamedan', keywords: ['hamedan'] },
+              { name: 'khorramabad', keywords: ['khorramabad'] },
+              { name: 'zanjan', keywords: ['zanjan'] },
+              { name: 'qazvin', keywords: ['qazvin'] },
             ];
             if (country === 'Iran') {
               for (const pat of iranCityPatterns) {
-                if (pat.keywords.some(k => lower.includes(k))) return pat.name;
+                if (pat.keywords.some(k => searchText.includes(k))) return pat.name;
               }
             }
             // Hong Kong district keywords
@@ -197,21 +205,28 @@ export async function listUnrestEvents(
               { name: 'kowloon', keywords: ['kowloon bay', 'kowloon'] },
               { name: 'sheung wan', keywords: ['sheung wan'] },
               { name: 'tuen mun', keywords: ['tuen mun'] },
-              { name: 'tsim sha tsui', keywords: ['tsim sha tsui', 'tsim sha tsui'] },
+              { name: 'tsim sha tsui', keywords: ['tsim sha tsui'] },
               { name: 'tai po', keywords: ['tai po'] },
               { name: 'sha tin', keywords: ['sha tin'] },
               { name: 'tin shui wai', keywords: ['tin shui wai'] },
               { name: 'prince edward', keywords: ['prince edward'] },
               { name: 'wong tai sin', keywords: ['wong tai sin'] },
               { name: 'tung chung', keywords: ['tung chung'] },
-              { name: 'central', keywords: ['central'] },
+              { name: 'central', keywords: ['central', 'central station'] },
               { name: 'north point', keywords: ['north point'] },
               { name: 'causeway bay', keywords: ['causeway bay'] },
               { name: 'admiralty', keywords: ['admiralty'] },
+              { name: 'tai koo', keywords: ['tai koo'] },
+              { name: 'sham shui po', keywords: ['sham shui po'] },
+              { name: 'kwun tong', keywords: ['kwun tong'] },
+              { name: 'sai ying pun', keywords: ['sai ying pun'] },
+              { name: 'tai wai', keywords: ['tai wai'] },
+              { name: 'tai wo hau', keywords: ['tai wo hau'] },
+              { name: 'new town plaza', keywords: ['new town plaza'] },
             ];
             if (country === 'Hong Kong') {
               for (const pat of hkCityPatterns) {
-                if (pat.keywords.some(k => lower.includes(k))) return pat.name;
+                if (pat.keywords.some(k => searchText.includes(k))) return pat.name;
               }
             }
             return undefined;
@@ -293,7 +308,8 @@ export async function listUnrestEvents(
             const eventType = rawEventType as unknown as UnrestEvent['eventType'];
 
           // Determine city and location for each event
-            const detectedCity = extractCityFromSummary(summary, countryGuess);
+            const detectedCity = extractCityFromSummary(summary, countryGuess, tags);
+            // If no specific city detected, use a descriptive fallback
             const city = detectedCity || '';
 
             // 1) Try exact tag match first

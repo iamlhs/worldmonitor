@@ -1517,9 +1517,13 @@ export class MapPopup {
       ? `<div class="popup-stat"><span class="stat-label">${t('popups.region') || 'REGION'}</span><span class="stat-value">${escapeHtml(event.region)}</span></div>`
       : '';
 
-    // Location subtitle: city + country + region
+    // Location subtitle: city + country + region (with fallback for nationwide events)
     const locationParts: string[] = [];
-    if (event.city) locationParts.push(escapeHtml(event.city));
+    if (event.city) {
+      locationParts.push(escapeHtml(event.city));
+    } else if (event.region && event.region !== event.country.toLowerCase().replace(/\s+/g, '')) {
+      locationParts.push(escapeHtml(event.region));
+    }
     locationParts.push(escapeHtml(event.country));
     const locationStr = locationParts.join(', ');
 
@@ -1584,6 +1588,7 @@ export class MapPopup {
       const sevClass = event.severity;
       const dateStr = event.time.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
       const city = event.city ? escapeHtml(event.city) : '';
+      const location = city || (event.region ? escapeHtml(event.region) : '');
       const isEdasEvent = String(event.id).startsWith('edas:') || event.sourceType === 'edas' || (Array.isArray(event.sources) && event.sources.includes('edas'));
       const edasBadge = isEdasEvent ? ' <span class="edas-dot" title="EDAS">◆</span>' : '';
       const summarySnippet = event.summary
@@ -1599,7 +1604,7 @@ export class MapPopup {
       const edasLink = isEdasEvent
         ? ` <button class="popup-link edas-cluster-item-btn" data-edas-id="${escapeHtml(event.id)}">🔍 分析</button>`
         : '';
-      return `<li class="cluster-item ${sevClass}${isEdasEvent ? ' edas-event' : ''}">${icon} ${dateStr}${city ? ` • ${city}` : ''}${edasBadge}${summarySnippet}${sourceLink}${edasLink}</li>`;
+      return `<li class="cluster-item ${sevClass}${isEdasEvent ? ' edas-event' : ''}">${icon} ${dateStr}${location ? ` • ${location}` : ''}${edasBadge}${summarySnippet}${sourceLink}${edasLink}</li>`;
     }).join('');
 
     const renderedCount = Math.min(10, data.items.length);
@@ -1607,9 +1612,18 @@ export class MapPopup {
     const moreCount = remainingCount > 0 ? `<li class="cluster-more">+${remainingCount} ${t('popups.moreEvents')}</li>` : '';
     const headerClass = highSeverity > 0 ? 'high' : riots > 0 ? 'medium' : 'low';
 
+    // Determine best location label for cluster header
+    const cities = [...new Set(data.items.map(e => e.city).filter(Boolean))] as string[];
+    const regions = [...new Set(data.items.map(e => e.region).filter(Boolean))] as string[];
+    const locationLabel = cities.length > 0
+      ? `${escapeHtml(data.country)} (${cities.slice(0, 3).join(', ')}${cities.length > 3 ? '…' : ''})`
+      : regions.length > 0
+      ? `${escapeHtml(data.country)} (${regions.join(', ')})`
+      : escapeHtml(data.country);
+
     return `
       <div class="popup-header protest ${headerClass} cluster${edasItems.length > 0 ? ' edas' : ''}">
-        <span class="popup-title">📢 ${escapeHtml(data.country)}${edasItems.length > 0 ? ` ◆<span class="edas-count-badge">EDAS×${edasItems.length}</span>` : ''}</span>
+        <span class="popup-title">📢 ${locationLabel}${edasItems.length > 0 ? ` ◆<span class="edas-count-badge">EDAS×${edasItems.length}</span>` : ''}</span>
         <span class="popup-badge">${totalCount} ${t('popups.events').toUpperCase()}</span>
         <button class="popup-close" aria-label="Close">×</button>
       </div>
