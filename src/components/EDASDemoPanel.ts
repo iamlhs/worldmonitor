@@ -1,6 +1,8 @@
 import { Panel } from './Panel';
 import { escapeHtml } from '@/utils/sanitize';
 import * as d3 from 'd3';
+import { getContextChain, buildCausalChain } from '@/services/causal-chain';
+import type { CausalChain, CausalEvent, CausalLink } from '@/services/causal-chain';
 
 // ---- Types ----
 
@@ -117,7 +119,7 @@ export class EDASDemoPanel extends Panel {
             const events = await eventsResp.json();
             this._allEvents = (Array.isArray(events) ? events : []).map((e: any) => ({
               id: e.id,
-              title: e.title || '',
+              title: EDASDemoPanel.getEventTitle(e),
               summary: e.summary || '',
               date: e.date_dir || '',
               region: e.region || '',
@@ -196,6 +198,9 @@ export class EDASDemoPanel extends Panel {
     this._overlayKeyHandler = (e: KeyboardEvent) => { if (e.key === 'Escape') this.closeOverlay(); };
     document.addEventListener('keydown', this._overlayKeyHandler);
 
+    // Render causal chain visualization after DOM is ready
+    setTimeout(() => this.renderCausalChain(event), 100);
+
     // Wire KG load buttons inside the overlay
     overlay.querySelectorAll('[data-kg-file]').forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -253,7 +258,7 @@ export class EDASDemoPanel extends Panel {
       const events = await eventsResp.json();
       this._allEvents = (Array.isArray(events) ? events : []).map((e: any) => ({
         id: e.id,
-        title: e.title || '',
+        title: EDASDemoPanel.getEventTitle(e),
         summary: e.summary || '',
         date: e.date_dir || '',
         region: e.region || '',
@@ -352,6 +357,8 @@ export class EDASDemoPanel extends Panel {
         return;
       }
       this.content.innerHTML = this.renderDetailHtml(event);
+      // Render causal chain visualization
+      this.renderCausalChain(event);
       this.content.scrollTop = 0;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -464,10 +471,19 @@ export class EDASDemoPanel extends Panel {
         </div>
       </div>
 
+      <!-- Causal Chain Section — rendered by renderCausalChain() after DOM insert -->
+      <div class="edas-section" id="edas-causal-section-${Date.now()}">
+        <div class="edas-section-title">⛓️ 时间因果链</div>
+        <p class="edas-muted">基于时间邻近和关键词重叠检测的候选因果链路。🖱️ 滚轮缩放，拖拽平移。</p>
+        <div id="edas-causal-viz-${Date.now()}" class="edas-causal-container">
+          <div class="edas-graph-placeholder">计算因果链中…</div>
+        </div>
+      </div>
+
       <div class="edas-section">
         <div class="edas-section-title">👥 人物关系链</div>
         <p class="edas-muted">
-          人物网络数据（GEXF / JSON 格式），同样是全局数据集。节点为人名，连线上的文字标明人物间的关系类型：
+          人物网络数据（GEXF / JSON 格式），同样是全局数据集。节点为人名，连线上的文字标明人物间的关系类型。<b>大图模式下点击右上角「🏷️ 显示标签」查看节点名称</b>：
         </p>
         <div class="edas-kg-toolbar" style="flex-direction:column;gap:4px">
           ${assets.filter((a: string) => a.includes('people')).map((p: string) => {
@@ -499,11 +515,6 @@ export class EDASDemoPanel extends Panel {
       </div>
 
       <div class="edas-section">
-        <div class="edas-section-title">🐦 相关推文样本</div>
-        <div class="edas-tweets">${tweetsHtml}</div>
-      </div>
-
-      <div class="edas-section">
         <div class="edas-section-title">📦 KG / 其它数据资产</div>
         <ul class="edas-asset-list">${assetsHtml}</ul>
       </div>
@@ -514,6 +525,22 @@ export class EDASDemoPanel extends Panel {
     </div>`;
   }
 
+  /**
+   * Extract a readable title from an EDAS event.
+   * Events.json has numeric "1", "2" titles — use summary instead.
+   */
+  private static getEventTitle(e: any): string {
+    const raw = e.title || '';
+    const summary = e.summary || '';
+    // If title is a short number or empty, use summary start
+    if (!raw || /^\d{1,2}$/.test(raw.trim())) {
+      // First sentence of summary, up to 80 chars
+      const firstSentence = summary.split(/[.。!！?？]/).filter(Boolean)[0] || summary;
+      return firstSentence.slice(0, 80) + (firstSentence.length > 80 ? '…' : '');
+    }
+    return raw;
+  }
+
   // ───── KG File Descriptions ─────
   // These files are global knowledge bases, not specific to any event/region.
   private static readonly KG_DESCRIPTIONS: Record<string, { icon: string; label: string; desc: string }> = {
@@ -522,6 +549,12 @@ export class EDASDemoPanel extends Panel {
     'chain_kg.json':   { icon: '🛰️', label: 'NOAA 卫星任务链', desc: '1970年代 NOAA/ITOS/TIROS 气象卫星的前序与后续任务时序链（Previousmission→Nextmission）' },
     'chain_kg_1.json': { icon: '🏛️', label: '奥巴马政治关系网', desc: '奥巴马及其政治网络（拜登、克里、格拉斯利等参议院人物）的 President/Vicepresident/Successor 关系' },
     'KG_chain.json':   { icon: '🛰️', label: 'NOAA 卫星任务链', desc: '与 chain_kg.json 内容相同，NOAA/ITOS/TIROS 气象卫星任务时序链' },
+    // People/Person GEXF files
+    'people.gexf':     { icon: '🌍', label: '全球政治人物图谱', desc: '76 个节点，涵盖多国首脑/政治家（爱尔兰、澳大利亚、斯里兰卡、马来西亚、英国等）的人物关系网络' },
+    'people1.gexf':    { icon: '🌍', label: '全球政治人物图谱', desc: '与 people.gexf 内容相同（不同 GEXF 导出格式），76 节点全球政要关系网' },
+    'people2.gexf':    { icon: '🇺🇸', label: '美国政治人物网络', desc: '121 个节点，涵盖美国参议员、众议员、总统和内阁官员的广泛政治关系图谱' },
+    'people3.gexf':    { icon: '🇺🇸', label: '美国国会领导层', desc: '82 个节点，聚焦众议院/参议院领导层（议长、党鞭、委员会主席）的权力关系' },
+    'people4.gexf':    { icon: '🇺🇸', label: '美国国防/行政官员', desc: '77 个节点，包含国防部长、总统、副总统等美国行政与国防体系人物关系' },
   };
 
   // ───── Inline SVG Bar Chart ─────
@@ -582,21 +615,55 @@ export class EDASDemoPanel extends Panel {
           edges = [];
         }
       } else if (text.trim().startsWith('<')) {
-        // Parse GEXF XML
+        // Parse GEXF XML (handles namespaced elements like <gexf xmlns="...">)
         const parser = new DOMParser();
         const xml = parser.parseFromString(text, 'application/xml');
-        const nodeEls = xml.querySelectorAll('node');
-        nodes = Array.from(nodeEls).map((n, i) => ({
-          id: n.getAttribute('id') || String(i),
-          name: n.getAttribute('label') || n.getAttribute('id') || String(i),
-          label: n.getAttribute('label') || n.getAttribute('id') || String(i),
-        }));
-        const edgeEls = xml.querySelectorAll('edge');
-        edges = Array.from(edgeEls).map((e) => ({
-          source: e.getAttribute('source') || '',
-          target: e.getAttribute('target') || '',
-          value: e.getAttribute('weight') || 1,
-        }));
+        // Use [id] attribute selector which works across namespaces
+        const nodeEls = xml.querySelectorAll('[id]');
+        // Filter to actual node-like elements (not gexf/graph/meta/attribute elements)
+        const nodeSet = new Set<string>();
+        const tempNodes: Array<{ id: string; name: string; label: string }> = [];
+        nodeEls.forEach((el) => {
+          const id = el.getAttribute('id');
+          if (!id || id.startsWith('gexf') || id.startsWith('graph') || el.tagName.toLowerCase() === 'gexf' || el.tagName.toLowerCase() === 'graph') return;
+          const label = el.getAttribute('label') || id;
+          if (!nodeSet.has(id)) {
+            nodeSet.add(id);
+            tempNodes.push({ id, name: label, label });
+          }
+        });
+        // If no nodes found by [id], try getElementsByTagName
+        if (tempNodes.length === 0) {
+          const fallbackNodes = xml.getElementsByTagNameNS('*', 'node');
+          for (let i = 0; i < fallbackNodes.length; i++) {
+            const n = fallbackNodes[i];
+            const id = n.getAttribute('id') || String(i);
+            const label = n.getAttribute('label') || id;
+            tempNodes.push({ id, name: label, label });
+          }
+        }
+        nodes = tempNodes;
+
+        // Parse edges: try namespace-aware first, then fallback
+        const tempEdges: Array<{ source: string; target: string; value: string | number }> = [];
+        const edgeEls = xml.getElementsByTagNameNS('*', 'edge');
+        for (let i = 0; i < edgeEls.length; i++) {
+          const e = edgeEls[i];
+          const src = e.getAttribute('source');
+          const tgt = e.getAttribute('target');
+          if (src && tgt) {
+            tempEdges.push({ source: src, target: tgt, value: e.getAttribute('weight') || 1 });
+          }
+        }
+        // Fallback: querySelectorAll for non-namespaced XML
+        if (tempEdges.length === 0) {
+          xml.querySelectorAll('edge').forEach((e) => {
+            const src = e.getAttribute('source');
+            const tgt = e.getAttribute('target');
+            if (src && tgt) tempEdges.push({ source: src, target: tgt, value: e.getAttribute('weight') || 1 });
+          });
+        }
+        edges = tempEdges;
       }
 
       if (nodes.length === 0) {
@@ -702,7 +769,7 @@ export class EDASDemoPanel extends Panel {
       .attr('stroke-width', isLarge ? 1.0 : 1.5)
       .attr('stroke-opacity', isLarge ? 0.4 : 0.55);
 
-    // ── Edge labels showing relationship type ──
+    // ── Edge labels showing relationship type (always visible) ──
     const linkText = linkGroup
       .selectAll('text')
       .data(simEdges)
@@ -712,14 +779,14 @@ export class EDASDemoPanel extends Panel {
         const v = String(d.value ?? '');
         return v.length > 14 ? v.slice(0, 12) + '…' : v;
       })
-      .attr('font-size', isLarge ? 4.5 : 7)
+      .attr('font-size', isLarge ? 5.5 : 8)
       .attr('fill', (d: any) => edgeColor(d.value))
-      .attr('stroke', 'var(--bg)')
-      .attr('stroke-width', 1.5)
+      .attr('stroke', '#000000')
+      .attr('stroke-width', 2.5)
       .attr('paint-order', 'stroke')
       .attr('text-anchor', 'middle')
       .attr('font-family', 'sans-serif')
-      .attr('font-weight', 600)
+      .attr('font-weight', 700)
       .attr('pointer-events', 'none');
 
     const node = nodeGroup
@@ -747,7 +814,7 @@ export class EDASDemoPanel extends Panel {
       .attr('stroke', '#ffffff44')
       .attr('stroke-width', 1.2);
 
-    // Labels — hidden on large graphs, shown on hover
+    // Labels — for large graphs, still show on hover but make key labels visible
     const text = node.append('text')
       .text((d: any) => {
         const label = d.name || d.label || d.id;
@@ -764,8 +831,23 @@ export class EDASDemoPanel extends Panel {
       .attr('font-weight', 600)
       .attr('pointer-events', 'none');
 
+    // For large graphs: hide labels by default (shown on hover or via button toggle)
     if (isLarge) {
       text.attr('opacity', 0);
+      // Add a toggle button for showing/hiding all labels
+      const toggleBtn = d3.select(container).append('button')
+        .attr('class', 'edas-kg-btn')
+        .style('position', 'absolute')
+        .style('top', '4px')
+        .style('right', '4px')
+        .style('z-index', '5')
+        .text('🏷️ 显示标签');
+      let labelsVisible = false;
+      toggleBtn.on('click', () => {
+        labelsVisible = !labelsVisible;
+        text.attr('opacity', labelsVisible ? 0.85 : 0);
+        toggleBtn.text(labelsVisible ? '🏷️ 隐藏标签' : '🏷️ 显示标签');
+      });
     }
 
     node.append('title')
@@ -790,7 +872,7 @@ export class EDASDemoPanel extends Panel {
     node.on('mouseenter', function (ev: any, d: any) {
       // Highlight this node
       d3.select(this).select('circle').attr('fill', '#ff66ff').attr('r', r * 1.8).attr('stroke', '#ffffff88').attr('stroke-width', 2);
-      d3.select(this).select('text').attr('opacity', 1);
+      d3.select(this).select('text').attr('opacity', 0.9);
 
       // Find neighbours
       const nbrs = new Set<string>();
@@ -848,4 +930,231 @@ export class EDASDemoPanel extends Panel {
       .attr('class', 'edas-graph-caption')
       .text(`📁 ${fileName} · ${n} 节点 · ${edges.length} 连接 · ${relTypes.size} 种关系类型${isLarge ? ' · 🖱️ 悬停显示标签' : ''}`);
   }
+
+  // ───── Causal Chain Visualization ─────
+
+  private renderCausalChain(focusEvent: EdasEvent): void {
+    const container = this.content.querySelector('[id^="edas-causal-viz-"]') as HTMLElement
+      ?? this._overlay?.querySelector('[id^="edas-causal-viz-"]') as HTMLElement;
+    if (!container) return;
+
+    const sameRegion = this._allEvents.filter(e => e.region === focusEvent.region);
+    if (sameRegion.length < 2) {
+      container.innerHTML = '<div class="edas-graph-placeholder">需要至少 2 个同地区事件才能构建因果链</div>';
+      return;
+    }
+
+    // Limit to 8 events max to avoid overcrowding
+    const chain = getContextChain(sameRegion as CausalEvent[], focusEvent.id, 8);
+    if (chain.links.length === 0) {
+      container.innerHTML = '<div class="edas-graph-placeholder">未检测到事件间的因果关联</div>';
+      return;
+    }
+
+    container.innerHTML = '';
+    const n = chain.events.length;
+    const cw = container.clientWidth || 500;
+    // Use fixed aspect with generous spacing
+    const baseW = Math.max(cw, 500);
+    const baseH = 280;
+    // The "world" is wider than the viewport — user can scroll/zoom
+    const worldW = Math.max(baseW, n * 120 + 60);
+    const worldH = baseH;
+
+    const svg = d3.select(container).append('svg')
+      .attr('width', '100%').attr('height', baseH)
+      .attr('viewBox', `0 0 ${baseW} ${baseH}`)
+      .style('background', 'transparent')
+      .style('cursor', 'grab');
+
+    // ── Zoom & pan ──
+    const g = svg.append('g');
+    const zoom = d3.zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.3, 4])
+      .on('zoom', (event) => { g.attr('transform', event.transform); });
+    svg.call(zoom);
+    // Initial zoom out to show full width
+    const initScale = Math.min(1, baseW / worldW);
+    svg.call(zoom.transform, d3.zoomIdentity.translate(0, 0).scale(initScale));
+
+    // ── Custom HTML tooltip overlay ──
+    const tooltip = d3.select(container).append('div')
+      .attr('class', 'edas-causal-tooltip');
+
+    function showTooltip(html: string, clientX: number, clientY: number) {
+      const rect = container.getBoundingClientRect();
+      const left = clientX - rect.left;
+      const top = clientY - rect.top;
+      tooltip.style('display', 'block').html(html);
+      // Position near the cursor, auto-flip if near right/bottom edge
+      const tw = tooltip.node() ? (tooltip.node() as HTMLElement).offsetWidth : 320;
+      const th = tooltip.node() ? (tooltip.node() as HTMLElement).offsetHeight : 200;
+      const useLeft = left + tw + 16 < rect.width ? left + 12 : left - tw - 8;
+      const useTop = top + th + 16 < rect.height ? top - 8 : top - th - 8;
+      tooltip.style('left', Math.max(4, useLeft) + 'px')
+             .style('top', Math.max(4, useTop) + 'px');
+      requestAnimationFrame(() => tooltip.classed('visible', true));
+    }
+
+    function hideTooltip() {
+      tooltip.classed('visible', false);
+      setTimeout(() => tooltip.style('display', 'none'), 200);
+    }
+
+    function moveTooltip(clientX: number, clientY: number) {
+      const rect = container.getBoundingClientRect();
+      const left = clientX - rect.left;
+      const top = clientY - rect.top;
+      const tw = tooltip.node() ? (tooltip.node() as HTMLElement).offsetWidth : 320;
+      const th = tooltip.node() ? (tooltip.node() as HTMLElement).offsetHeight : 200;
+      const useLeft = left + tw + 16 < rect.width ? left + 12 : left - tw - 8;
+      const useTop = top + th + 16 < rect.height ? top - 8 : top - th - 8;
+      tooltip.style('left', Math.max(4, useLeft) + 'px')
+             .style('top', Math.max(4, useTop) + 'px');
+    }
+
+    // ── Layout constants ──
+    const padL = 20, padR = 20, padT = 30;
+    const nodeY = worldH - 50;
+    const nodeSpacing = worldW / (n + 1);
+
+    // Node positions
+    const nodePos = new Map<string, { x: number; y: number }>();
+    chain.events.forEach((e, i) => {
+      nodePos.set(e.id, { x: nodeSpacing * (i + 1), y: nodeY });
+    });
+
+    // ── Timeline line ──
+    g.append('line')
+      .attr('x1', padL).attr('y1', nodeY)
+      .attr('x2', worldW - padR).attr('y2', nodeY)
+      .attr('stroke', '#444').attr('stroke-width', 1).attr('stroke-dasharray', '4,3');
+
+    // ── Arrow marker ──
+    svg.select('defs').remove();
+    const defs = svg.append('defs');
+    defs.append('marker')
+      .attr('id', 'ca-arrow')
+      .attr('viewBox', '0 0 10 10').attr('refX', 10).attr('refY', 5)
+      .attr('markerWidth', 5).attr('markerHeight', 5).attr('orient', 'auto')
+      .append('path').attr('d', 'M0,0 L10,5 L0,10 Z').attr('fill', '#aa88dd');
+
+    // ── Draw links as arcs ──
+    // Collect links per source column to stagger arcs vertically
+    const perColumn = new Map<number, number>();
+    chain.links.forEach(link => {
+      const src = nodePos.get(link.source);
+      const dst = nodePos.get(link.target);
+      if (!src || !dst || src.x >= dst.x) return;
+
+      const col = Math.floor(src.x / 50);
+      const idx = perColumn.get(col) ?? 0;
+      perColumn.set(col, idx + 1);
+      // Arc height: minimum 40, each additional track adds 28
+      const arcH = 40 + idx * 28;
+      const midX = (src.x + dst.x) / 2;
+
+      // Arc path with custom tooltip
+      const fullLabel = link.label;
+      g.append('path')
+        .attr('d', `M${src.x},${src.y} Q${midX},${src.y - arcH} ${dst.x},${dst.y}`)
+        .attr('fill', 'none')
+        .attr('stroke', causalColor(link.confidence))
+        .attr('stroke-width', Math.max(1.5, link.confidence * 2.5))
+        .attr('stroke-opacity', 0.75)
+        .attr('marker-end', 'url(#ca-arrow)')
+        .on('mouseenter', (event: MouseEvent) => {
+          showTooltip(`
+            <div class="edas-causal-tooltip-link-type">⛓️ ${escapeHtml(fullLabel)}</div>
+            <div class="edas-causal-tooltip-meta" style="border-top:none;margin-top:4px">
+              <span>🔗 ${escapeHtml(link.type)}</span>
+              <span>⏱ ${link.timeGapHours}h</span>
+              <span>📊 ${(link.confidence * 100).toFixed(0)}%</span>
+            </div>
+          `, event.clientX, event.clientY);
+        })
+        .on('mousemove', (event: MouseEvent) => moveTooltip(event.clientX, event.clientY))
+        .on('mouseleave', hideTooltip);
+
+      const label = link.label.length > 12 ? link.label.slice(0, 10) + '…' : link.label;
+      g.append('text')
+        .attr('x', midX).attr('y', src.y - arcH - 5)
+        .attr('text-anchor', 'middle').attr('font-size', 7)
+        .attr('fill', causalColor(link.confidence))
+        .attr('stroke', '#00000088').attr('stroke-width', 2).attr('paint-order', 'stroke')
+        .text(label);
+    });
+
+    // ── Draw nodes ──
+    chain.events.forEach((e, i) => {
+      const pos = nodePos.get(e.id)!;
+      const isFocus = e.id === focusEvent.id;
+      const r = isFocus ? 7 : 5;
+      const color = isFocus ? '#ff66ff' : '#bb77ff';
+
+      // Date
+      g.append('text').attr('x', pos.x).attr('y', padT + 4)
+        .attr('text-anchor', 'middle').attr('font-size', 8)
+        .attr('fill', 'var(--text-dim)').attr('font-family', 'monospace')
+        .text(e.date || '');
+
+      // Circle + custom tooltip (full summary on hover)
+      const summaryText = e.summary || e.title || '无摘要';
+      const regionIcon = e.region === 'hongkong' ? '🇭🇰' : e.region === 'iran' ? '🇮🇷' : e.region === 'ukraine' ? '🇺🇦' : '📍';
+      g.append('circle').attr('cx', pos.x).attr('cy', pos.y).attr('r', r)
+        .attr('fill', color)
+        .attr('stroke', isFocus ? '#ffffffcc' : '#ffffff44')
+        .attr('stroke-width', isFocus ? 2.5 : 1)
+        .on('mouseenter', function (event: MouseEvent) {
+          showTooltip(`
+            <div class="edas-causal-tooltip-title">${escapeHtml(e.title.slice(0, 60))}</div>
+            <div class="edas-causal-tooltip-summary">${escapeHtml(summaryText.slice(0, 300))}</div>
+            <div class="edas-causal-tooltip-meta">
+              <span>📅 ${escapeHtml(e.date)}</span>
+              <span>${regionIcon} ${escapeHtml(e.region)}</span>
+              ${e.bursty ? '<span>⚠️ 突发</span>' : ''}
+              ${isFocus ? '<span>🎯 当前焦点</span>' : ''}
+            </div>
+          `, event.clientX, event.clientY);
+        })
+        .on('mousemove', (event: MouseEvent) => moveTooltip(event.clientX, event.clientY))
+        .on('mouseleave', hideTooltip);
+
+      // Title (truncated label, staggered above/below to prevent overlap)
+      const title = e.title.slice(0, 28) + (e.title.length > 28 ? '…' : '');
+      const labelAbove = i % 2 !== 0;
+      const labelY = labelAbove ? pos.y - r - 8 : pos.y + r + 14;
+      g.append('text').attr('x', pos.x).attr('y', labelY)
+        .attr('text-anchor', 'middle').attr('font-size', 7.5)
+        .attr('fill', 'var(--text-secondary)')
+        .attr('opacity', 0.85)
+        .text(title);
+
+      // Bursty ★
+      if (e.bursty) {
+        g.append('text').attr('x', pos.x + r + 5).attr('y', pos.y - r - 2)
+          .attr('font-size', 9).attr('fill', '#ff8844').text('★');
+      }
+
+      // Focus indicator
+      if (isFocus) {
+        g.append('rect')
+          .attr('x', pos.x - 24).attr('y', pos.y + r + 18)
+          .attr('width', 48).attr('height', 2)
+          .attr('rx', 1).attr('fill', '#ff66ff').attr('opacity', 0.7);
+      }
+    });
+
+    // ── Legend ──
+    const types = [...new Set(chain.links.map(l => l.type))];
+    const legendY = worldH - 6;
+    g.append('text').attr('x', padL).attr('y', legendY)
+      .attr('font-size', 7).attr('fill', 'var(--text-dim)').attr('opacity', 0.5)
+      .text(`⛓️ ${chain.links.length} 关联 · ${types.join(', ')} · 🖱️ 滚轮缩放拖拽`);
+  }
+}
+
+/** Helper: color by causal confidence */
+function causalColor(conf: number): string {
+  return conf > 0.6 ? '#ff6688' : conf > 0.4 ? '#bb88ee' : '#8888bb';
 }

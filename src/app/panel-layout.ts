@@ -1147,6 +1147,10 @@ export class PanelLayoutManager implements AppModule {
       import('@/components/EDASDemoPanel').then(m => new m.EDASDemoPanel()),
     );
 
+    this.lazyPanel('news-plot', () =>
+      import('@/components/NewsPlotPanel').then(m => new m.NewsPlotPanel()),
+    );
+
     this.lazyPanel('displacement', () =>
       import('@/components/DisplacementPanel').then(m => {
         const p = new m.DisplacementPanel();

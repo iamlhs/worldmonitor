@@ -117,6 +117,7 @@ const FULL_PANELS: Record<string, PanelConfig> = {
   'geo-hubs': { name: 'Geopolitical Hubs', enabled: false, priority: 2 },
   'tech-hubs': { name: 'Hot Tech Hubs', enabled: false, priority: 2 },
   'edas-demo': { name: 'EDAS 事件分析', enabled: true, priority: 2 },
+  'news-plot': { name: '📰 新闻点位绘制', enabled: true, priority: 2 },
 };
 
 const FULL_MAP_LAYERS: MapLayers = {

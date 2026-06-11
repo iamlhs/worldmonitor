@@ -3627,6 +3627,306 @@ a.hub-top-story {
   border-color: #b44aff88;
 }
 
+/* Causal chain — horizontal timeline with zoom/pan */
+.edas-causal-container {
+  width: 100%;
+  min-height: 240px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--bg);
+  position: relative;
+}
+
+.edas-causal-container svg {
+  display: block;
+}
+
+/* Overlay: bigger causal area */
+.edas-overlay-content .edas-causal-container {
+  min-height: 280px;
+}
+
+.edas-causal-container svg {
+  display: block;
+}
+
+/* ── Causal chain custom tooltip ── */
+.edas-causal-tooltip {
+  position: absolute;
+  z-index: 999;
+  pointer-events: none;
+  background: linear-gradient(135deg, #1a0a2e 0%, #2d1b4e 100%);
+  border: 1px solid #b44aff66;
+  border-radius: 10px;
+  padding: 12px 16px;
+  max-width: 360px;
+  width: auto;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px #b44aff33, 0 0 20px #b44aff22;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #e0d0f0;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.edas-causal-tooltip.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.edas-causal-tooltip-title {
+  font-weight: 700;
+  font-size: 14px;
+  color: #d8aaff;
+  margin-bottom: 6px;
+  letter-spacing: 0.3px;
+  border-bottom: 1px solid #b44aff33;
+  padding-bottom: 6px;
+}
+.edas-causal-tooltip-summary {
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: #c0b0d8;
+  max-height: 100px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #b44aff66 transparent;
+}
+.edas-causal-tooltip-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid #b44aff22;
+  font-size: 10.5px;
+  color: #9888b0;
+}
+.edas-causal-tooltip-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.edas-causal-tooltip-link-type {
+  margin-top: 2px;
+  font-size: 11px;
+  color: #b88ae0;
+  font-style: italic;
+  background: #b44aff15;
+  padding: 3px 10px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+/* ==========================================================
+   News Plot Panel — 新闻点位绘制
+   ========================================================== */
+.newsplot-host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.newsplot-header {
+  padding: 10px 12px 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.newsplot-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.newsplot-desc {
+  font-size: 9px;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+.newsplot-section {
+  padding: 8px 12px;
+}
+
+.newsplot-label {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 4px;
+  display: block;
+}
+
+.newsplot-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--overlay-subtle);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 11px;
+  font-family: inherit;
+  padding: 8px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.newsplot-textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.newsplot-file {
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+.newsplot-actions {
+  display: flex;
+  gap: 6px;
+  padding: 4px 12px 8px;
+}
+
+.newsplot-btn {
+  flex: 1;
+  padding: 7px 10px;
+  border: none;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.12s;
+}
+
+.newsplot-btn-primary {
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+}
+
+.newsplot-btn-primary:hover {
+  background: color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.newsplot-btn-secondary {
+  background: var(--overlay-subtle);
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+}
+
+.newsplot-btn-secondary:hover {
+  background: var(--surface-hover);
+}
+
+.newsplot-result {
+  padding: 0 12px 8px;
+}
+
+.newsplot-result-ok {
+  padding: 8px;
+  background: color-mix(in srgb, var(--semantic-normal) 10%, transparent);
+  border-radius: 4px;
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+.newsplot-result-warn {
+  padding: 8px;
+  background: color-mix(in srgb, #ffaa44 10%, transparent);
+  border-radius: 4px;
+  font-size: 10px;
+  color: #ffaa44;
+}
+
+.newsplot-result-info {
+  padding: 8px;
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  border-radius: 4px;
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.newsplot-success {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.newsplot-success-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.newsplot-type-badge {
+  font-size: 8px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.newsplot-marker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.newsplot-marker-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+  font-size: 10px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.newsplot-marker-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+
+.newsplot-marker-coords {
+  font-size: 8px;
+  color: var(--text-dim);
+  margin-left: auto;
+  font-family: monospace;
+}
+
+.newsplot-samples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.newsplot-sample {
+  background: var(--overlay-subtle);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: 9px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.1s;
+}
+
+.newsplot-sample:hover {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 /* ==========================================================
    EDAS Full-Screen Overlay (右側全高弹窗)
    ========================================================== */

@@ -103,6 +103,7 @@ import {
   mergeStockAnalysisHistory,
   type StockAnalysisHistory,
 } from '@/services/stock-analysis-history';
+import { handleNewsPlotEvent, handleNewsClearEvent } from '@/services/news-plotter';
 import { checkBatchForBreakingAlerts, dispatchOrefBreakingAlert } from '@/services/breaking-news-alerts';
 import { effectivePubDateMs } from '@/services/feed-date';
 import { mlWorker } from '@/services/ml-worker';
@@ -322,6 +323,14 @@ export class DataLoaderManager implements AppModule {
       });
     };
     window.addEventListener('wm-market-watchlist-changed', this.boundMarketWatchlistHandler as EventListener);
+
+    // News Plotter: listen for plot/clear events from the NewsPlotPanel
+    window.addEventListener('news:plot', (ev: Event) => {
+      handleNewsPlotEvent(this.ctx.map, ev);
+    });
+    window.addEventListener('news:clear', () => {
+      handleNewsClearEvent(this.ctx.map);
+    });
 
     this.dailyBriefFrameworkUnsubscribe = subscribeFrameworkChange('daily-market-brief', () => {
       void this.loadDailyMarketBrief(true);
