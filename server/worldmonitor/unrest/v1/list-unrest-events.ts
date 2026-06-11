@@ -15,6 +15,114 @@ import { getCachedJson } from '../../../_shared/redis';
 
 const SEED_CACHE_KEY = 'unrest:events:v1';
 
+/** Parse a JSONL string into an array of objects (one JSON per line) */
+function parseJsonl(text: string): any[] {
+  const lines = text.split('\n').filter((l) => l.trim());
+  const results: any[] = [];
+  for (const line of lines) {
+    try { results.push(JSON.parse(line)); } catch { /* skip malformed */ }
+  }
+  return results;
+}
+
+/** Location entry with coordinates AND country */
+interface LocationEntry { latitude: number; longitude: number; country: string }
+
+/** Unified location table: city/region name → {lat, lon, country} */
+const LOCATIONS: Record<string, LocationEntry> = {
+  // —— Ukraine cities ——
+  'kyiv':         { latitude: 50.4501, longitude: 30.5234, country: 'Ukraine' },
+  'kiev':         { latitude: 50.4501, longitude: 30.5234, country: 'Ukraine' },
+  'bakhmut':      { latitude: 48.5953, longitude: 38.0003, country: 'Ukraine' },
+  'kherson':      { latitude: 46.6354, longitude: 32.6169, country: 'Ukraine' },
+  'odessa':       { latitude: 46.4825, longitude: 30.7233, country: 'Ukraine' },
+  'odesa':        { latitude: 46.4825, longitude: 30.7233, country: 'Ukraine' },
+  'kharkiv':      { latitude: 49.9935, longitude: 36.2304, country: 'Ukraine' },
+  'dnipro':       { latitude: 48.4647, longitude: 35.0462, country: 'Ukraine' },
+  'zaporizhzhia': { latitude: 47.8388, longitude: 35.1396, country: 'Ukraine' },
+  'mariupol':     { latitude: 47.0971, longitude: 37.5434, country: 'Ukraine' },
+  'mykolaiv':     { latitude: 46.9750, longitude: 31.9946, country: 'Ukraine' },
+  'lviv':         { latitude: 49.8397, longitude: 24.0297, country: 'Ukraine' },
+  'donetsk':      { latitude: 48.0159, longitude: 37.8028, country: 'Ukraine' },
+  'luhansk':      { latitude: 48.5670, longitude: 39.3171, country: 'Ukraine' },
+  'crimea':       { latitude: 45.0,    longitude: 34.0,   country: 'crimea' },
+  'simferopol':   { latitude: 44.9484, longitude: 34.1044, country: 'Ukraine' },
+  'melitopol':    { latitude: 46.8489, longitude: 35.3679, country: 'Ukraine' },
+  'berdiansk':    { latitude: 46.7595, longitude: 36.7899, country: 'Ukraine' },
+  'enerhodar':    { latitude: 47.4988, longitude: 34.6579, country: 'Ukraine' },
+  'irpin':        { latitude: 50.5192, longitude: 30.2447, country: 'Ukraine' },
+  'bucha':        { latitude: 50.5430, longitude: 30.2285, country: 'Ukraine' },
+  'hostomel':     { latitude: 50.5667, longitude: 30.2500, country: 'Ukraine' },
+  'chernihiv':    { latitude: 51.4937, longitude: 31.2890, country: 'Ukraine' },
+  'sumy':         { latitude: 50.9077, longitude: 34.7981, country: 'Ukraine' },
+  'poltava':      { latitude: 49.5883, longitude: 34.5514, country: 'Ukraine' },
+  'vinnytsia':    { latitude: 49.2331, longitude: 28.4682, country: 'Ukraine' },
+  'zhytomyr':     { latitude: 50.2547, longitude: 28.6587, country: 'Ukraine' },
+  'rivne':        { latitude: 50.6199, longitude: 26.2516, country: 'Ukraine' },
+  'ternopil':     { latitude: 49.5535, longitude: 25.5948, country: 'Ukraine' },
+  'ivano-frankivsk': { latitude: 48.9226, longitude: 24.7111, country: 'Ukraine' },
+  'uzhhorod':     { latitude: 48.6208, longitude: 22.2879, country: 'Ukraine' },
+  'cherkasy':     { latitude: 49.4285, longitude: 32.0620, country: 'Ukraine' },
+  'kropyvnytskyi': { latitude: 48.5110, longitude: 32.2568, country: 'Ukraine' },
+  'avdiivka':     { latitude: 48.1333, longitude: 37.7500, country: 'Ukraine' },
+  'avdeyevka':    { latitude: 48.1333, longitude: 37.7500, country: 'Ukraine' },
+  'vuhledar':     { latitude: 47.7833, longitude: 37.2500, country: 'Ukraine' },
+  'soledar':      { latitude: 48.6833, longitude: 38.0833, country: 'Ukraine' },
+  'popasna':      { latitude: 48.6333, longitude: 38.3833, country: 'Ukraine' },
+  'lysychansk':   { latitude: 48.9167, longitude: 38.4167, country: 'Ukraine' },
+  'syevyerodonetsk': { latitude: 48.9500, longitude: 38.4833, country: 'Ukraine' },
+  'kramatorsk':   { latitude: 48.7333, longitude: 37.5333, country: 'Ukraine' },
+  'sloviansk':    { latitude: 48.8667, longitude: 37.6167, country: 'Ukraine' },
+  'izium':        { latitude: 49.2000, longitude: 37.2833, country: 'Ukraine' },
+  'izyum':        { latitude: 49.2000, longitude: 37.2833, country: 'Ukraine' },
+  'kupiansk':     { latitude: 49.7167, longitude: 37.6167, country: 'Ukraine' },
+  'kakhovka':     { latitude: 46.8056, longitude: 33.4778, country: 'Ukraine' },
+  'nova kakhovka':{ latitude: 46.7667, longitude: 33.3667, country: 'Ukraine' },
+  'oskol':        { latitude: 49.2000, longitude: 37.5167, country: 'Ukraine' },
+  'robotyne':     { latitude: 47.4500, longitude: 35.8333, country: 'Ukraine' },
+  'verbove':      { latitude: 47.3000, longitude: 35.8333, country: 'Ukraine' },
+  'tokmak':       { latitude: 47.2500, longitude: 35.7000, country: 'Ukraine' },
+  'novoprokopivka': { latitude: 47.3833, longitude: 35.8667, country: 'Ukraine' },
+  'andriivka':    { latitude: 48.5000, longitude: 37.9667, country: 'Ukraine' },
+  'klischiivka':  { latitude: 48.4500, longitude: 37.9500, country: 'Ukraine' },
+  'ukraine':      { latitude: 48.3794, longitude: 31.1656, country: 'Ukraine' },
+
+  // —— Russia cities ——
+  'moscow':       { latitude: 55.7558, longitude: 37.6173, country: 'Russia' },
+  'belgorod':     { latitude: 50.6000, longitude: 36.6000, country: 'Russia' },
+
+  // —— Other countries ——
+  'belarus':      { latitude: 53.7098, longitude: 27.9534, country: 'Belarus' },
+  'poland':       { latitude: 51.9194, longitude: 19.1451, country: 'Poland' },
+  'germany':      { latitude: 51.1657, longitude: 10.4515, country: 'Germany' },
+  'france':       { latitude: 46.6034, longitude: 1.8883,  country: 'France' },
+  'britain':      { latitude: 55.3781, longitude: -3.4360, country: 'United Kingdom' },
+};
+
+/** Extract location from hashtags and text using the unified LOCATIONS table (which already has country) */
+function extractLocation(hashtags: string[], originText: string): { city: string; coords: { latitude: number; longitude: number } | null; country: string } {
+  const allText = (Array.isArray(hashtags) ? hashtags.join(' ') : '') + ' ' + (originText || '');
+  const lower = allText.toLowerCase();
+
+  // 1) Match specific city/region names (skip generic country-level entries)
+  const genericNames = new Set(['ukraine', 'belarus', 'poland', 'germany', 'france', 'britain', 'ukrainewar']);
+  for (const [name, entry] of Object.entries(LOCATIONS)) {
+    if (genericNames.has(name)) continue;
+    if (lower.includes(name)) {
+      return { city: name, coords: { latitude: entry.latitude, longitude: entry.longitude }, country: entry.country };
+    }
+  }
+
+  // 2) Fallback: detect country from keywords
+  if (/\brussia\b/i.test(lower))   return { city: '', coords: { latitude: LOCATIONS.moscow.latitude, longitude: LOCATIONS.moscow.longitude }, country: 'Russia' };
+  if (lower.includes('ukraine'))   return { city: '', coords: { latitude: LOCATIONS.ukraine.latitude, longitude: LOCATIONS.ukraine.longitude }, country: 'Ukraine' };
+  if (/\bbelarus\b/i.test(lower))  return { city: '', coords: { latitude: LOCATIONS.belarus.latitude, longitude: LOCATIONS.belarus.longitude }, country: 'Belarus' };
+  if (/\bpoland\b/i.test(lower))   return { city: '', coords: { latitude: LOCATIONS.poland.latitude, longitude: LOCATIONS.poland.longitude }, country: 'Poland' };
+  if (/\bgermany\b/i.test(lower))  return { city: '', coords: { latitude: LOCATIONS.germany.latitude, longitude: LOCATIONS.germany.longitude }, country: 'Germany' };
+
+  return { city: '', coords: null, country: 'Ukraine' };
+}
+
 function filterSeedEvents(
   events: UnrestEvent[],
   req: ListUnrestEventsRequest,
@@ -51,6 +159,9 @@ export async function listUnrestEvents(
       try {
         const root = path.resolve(process.cwd());
         const localPath = path.join(root, 'public', 'edas_exports', 'events.json');
+        // Also load index.json for the ukraine file reference
+        const idxPath = path.join(root, 'public', 'edas_exports', 'index.json');
+        const localIdx: any = fs.existsSync(idxPath) ? JSON.parse(fs.readFileSync(idxPath, 'utf8')) : {};
         if (fs.existsSync(localPath)) {
           const raw = fs.readFileSync(localPath, 'utf8');
           const parsed = JSON.parse(raw) as Array<any>;
@@ -259,7 +370,7 @@ export async function listUnrestEvents(
               return ['UNREST_EVENT_TYPE_CIVIL_UNREST', 'protests', '_category:accident__layer:protests'];
             }
             // Military / conflict
-            if (/\b(military|missile|strike|bomb|attack|troop|irgc|ballistic|weapon|satellite|launched)\b/i.test(allText)) {
+            if (/\b(military|missile|bomb|attack|troop|irgc|ballistic|weapon|satellite|launched|army|rocket|jet|fighter|convoy|invasion|war|soldier|force|explosion|blast|kill)\b/i.test(allText)) {
               return ['UNREST_EVENT_TYPE_CIVIL_UNREST', 'protests', '_category:military__layer:conflicts'];
             }
             // Cyber
@@ -393,6 +504,77 @@ export async function listUnrestEvents(
             return evt;
           });
           seedData = { events, clusters: [], pagination: undefined } as unknown as ListUnrestEventsResponse;
+        }
+
+        // ── Ukraine JSONL data (ukraine_with_cluid.json) ────────────────
+        const ukraineIdx = localIdx?.ukraine;
+        if (ukraineIdx) {
+          const ukrPath = path.join(root, 'public', 'edas_exports', ukraineIdx as string);
+          if (fs.existsSync(ukrPath)) {
+            const ukrRaw = fs.readFileSync(ukrPath, 'utf8');
+            const ukrLines = parseJsonl(ukrRaw);
+            console.log(`[EDAS] loaded ${ukrLines.length} Ukraine events`);
+            const ukrEvents = ukrLines.map((e: any) => {
+              const occurredAt = e.created_at ? new Date(e.created_at).getTime() : Date.now();
+              const hashtags: string[] = Array.isArray(e.entities?.hashtags) ? e.entities.hashtags : [];
+              const level = e.level || '一般事件';
+              // Determine severity from level
+              const rawSeverity = level === '特别重大事件' ? 'SEVERITY_LEVEL_HIGH'
+                : (level === '重大事件' || level === '较大事件') ? 'SEVERITY_LEVEL_MEDIUM'
+                : 'SEVERITY_LEVEL_LOW';
+              const severity = rawSeverity as unknown as UnrestEvent['severity'];
+
+              // Detect event type from text — Ukraine events are war/military,
+              // not protests. Classify as riot/strike/civil_unrest accordingly.
+              const lower = (e.origin_text || e.text || '').toLowerCase();
+              const rawEventType = /\b(riot|clash|tear gas|violence|confront|fighting|battle|assault)\b/i.test(lower) ? 'UNREST_EVENT_TYPE_RIOT'
+                : /\b(strike|walkout|boycott)\b/i.test(lower) ? 'UNREST_EVENT_TYPE_STRIKE'
+                : /\b(march|rally|demonstration|gather|sit-in)\b/i.test(lower) ? 'UNREST_EVENT_TYPE_DEMONSTRATION'
+                : /\b(military|missile|bomb|attack|troop|weapon|tank|helicopter|drone|shelling|artillery|war|soldier|force|wagner|munition|defence|army|rocket|jet|fighter|convoy|afu|ukro?nazi|zelensky|putin|invasion|occupation|withdrawal|regroup|counteroffensive|frontline|offensive|retreat|surrender|destroy|kill|strike|navy|marine|infantry|brigade|battalion|regiment|squad|platoon|ammo|explosion|blast|barrage|bombard)\b/i.test(lower) ? 'UNREST_EVENT_TYPE_CIVIL_UNREST'
+                : 'UNREST_EVENT_TYPE_PROTEST';
+              const eventType = rawEventType as unknown as UnrestEvent['eventType'];
+
+              // Extract location from hashtags/text via unified LOCATIONS table
+              const { city, coords, country } = extractLocation(hashtags, e.origin_text || e.text || '');
+
+              // Choose between keywords and hashtags as tags
+              const tags = Array.isArray(e.keywords) ? e.keywords : [];
+              // Add level info tag
+              const catTag = eventType === 'UNREST_EVENT_TYPE_CIVIL_UNREST' ? '_category:military_conflict__layer:conflicts'
+                : eventType === 'UNREST_EVENT_TYPE_RIOT' ? '_category:battle__layer:protests'
+                : '_category:war__layer:protests';
+              const enrichedTags = [...tags, `_level:${level}`, catTag];
+
+              const rawSourceType = 'UNREST_SOURCE_TYPE_UNSPECIFIED' as unknown as UnrestEvent['sourceType'];
+              const rawConfidence = (severity === 'SEVERITY_LEVEL_HIGH' ? 'CONFIDENCE_LEVEL_MEDIUM' : 'CONFIDENCE_LEVEL_LOW') as unknown as UnrestEvent['confidence'];
+              return {
+                id: `edas:ukraine_${e.id}`,
+                title: (e.origin_text || e.text || '').slice(0, 120),
+                summary: e.origin_text || e.text || '',
+                eventType,
+                city,
+                country,
+                region: 'ukraine',
+                location: coords || undefined,
+                occurredAt,
+                severity,
+                fatalities: 0,
+                sources: ['edas'],
+                sourceType: rawSourceType,
+                tags: enrichedTags,
+                actors: [],
+                confidence: rawConfidence,
+                sourceUrls: [`https://twitter.com/i/web/status/${e.id}`],
+              };
+            });
+            // Merge with existing events
+            if (seedData?.events) {
+              seedData.events.push(...ukrEvents);
+              console.log(`[EDAS] total events after merge: ${seedData.events.length}`);
+            } else {
+              seedData = { events: ukrEvents, clusters: [], pagination: undefined } as unknown as ListUnrestEventsResponse;
+            }
+          }
         }
       } catch (err) {
         // swallow local read errors and continue to return empty set below

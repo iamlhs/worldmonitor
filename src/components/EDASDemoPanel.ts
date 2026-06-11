@@ -100,11 +100,17 @@ export class EDASDemoPanel extends Panel {
 
   private _overlay: HTMLElement | null = null;
 
+  /** Parse a single line from a JSONL file */
+  private parseJsonlLine(line: string): any {
+    try { return JSON.parse(line); } catch { return null; }
+  }
+
   private async loadDataFromExports(): Promise<void> {
     try {
       const idxResp = await fetch('/edas_exports/index.json');
       if (idxResp.ok) {
         this._idx = await idxResp.json();
+        // Load main events (Hong Kong + Iran)
         if (this._idx?.events) {
           const eventsResp = await fetch('/edas_exports/' + this._idx.events);
           if (eventsResp.ok) {
@@ -120,6 +126,37 @@ export class EDASDemoPanel extends Panel {
               source_file: e.source_file || '',
             }));
           }
+        }
+        // Load Ukraine JSONL data
+        if (this._idx?.ukraine) {
+          try {
+            const ukrResp = await fetch('/edas_exports/' + this._idx.ukraine);
+            if (ukrResp.ok) {
+              const ukrText = await ukrResp.text();
+              const lines = ukrText.split('\n').filter((l: string) => l.trim());
+              const ukrEvents: EdasEvent[] = [];
+              for (const line of lines) {
+                const obj = this.parseJsonlLine(line);
+                if (!obj) continue;
+                const hashtags: string[] = Array.isArray(obj.entities?.hashtags) ? obj.entities.hashtags : [];
+                // Extract location from hashtags
+                const locationKeywords = ['kyiv','kiev','bakhmut','kherson','odessa','kharkiv','dnipro','zaporizhzhia','mariupol','mykolaiv','lviv','donetsk','luhansk','crimea','avdiivka','vuhledar','soledar','kramatorsk','izium','kakhovka','melitopol','berdiansk','enerhodar','irpin','bucha','chernihiv','sumy','poltava'];
+                const foundLocation = hashtags.find((h: string) => locationKeywords.includes(h.toLowerCase())) || '';
+                const date = obj.created_at ? obj.created_at.slice(0, 10) : '';
+                ukrEvents.push({
+                  id: `ukraine_${obj.id}`,
+                  title: (obj.origin_text || obj.text || '').slice(0, 80),
+                  summary: obj.origin_text || obj.text || '',
+                  date,
+                  region: 'ukraine',
+                  segments: {},
+                  bursty: obj.level === '特别重大事件',
+                  source_file: `https://twitter.com/i/web/status/${obj.id}`,
+                });
+              }
+              this._allEvents.push(...ukrEvents);
+            }
+          } catch {}
         }
         try {
           const tweetsResp = await fetch('/edas_exports/' + (this._idx.tweets_sample || 'tweets_sample.json'));
@@ -224,6 +261,35 @@ export class EDASDemoPanel extends Panel {
         bursty: !!e.bursty,
         source_file: e.source_file || '',
       }));
+      // Load Ukraine JSONL data
+      if (this._idx?.ukraine) {
+        try {
+          const ukrResp = await fetch('/edas_exports/' + this._idx.ukraine);
+          if (ukrResp.ok) {
+            const ukrText = await ukrResp.text();
+            const lines = ukrText.split('\n').filter((l: string) => l.trim());
+            const locationKeywords = ['kyiv','kiev','bakhmut','kherson','odessa','kharkiv','dnipro','zaporizhzhia','mariupol','mykolaiv','lviv','donetsk','luhansk','crimea','avdiivka','vuhledar','soledar','kramatorsk','izium','kakhovka','melitopol','berdiansk','enerhodar','irpin','bucha','chernihiv','sumy','poltava'];
+            for (const line of lines) {
+              try {
+                const obj = JSON.parse(line);
+                if (!obj) continue;
+                const hashtags: string[] = Array.isArray(obj.entities?.hashtags) ? obj.entities.hashtags : [];
+                const foundLocation = hashtags.find((h: string) => locationKeywords.includes(h.toLowerCase())) || '';
+                this._allEvents.push({
+                  id: `ukraine_${obj.id}`,
+                  title: (obj.origin_text || obj.text || '').slice(0, 80),
+                  summary: obj.origin_text || obj.text || '',
+                  date: obj.created_at ? obj.created_at.slice(0, 10) : '',
+                  region: 'ukraine',
+                  segments: {},
+                  bursty: obj.level === '特别重大事件',
+                  source_file: `https://twitter.com/i/web/status/${obj.id}`,
+                });
+              } catch {}
+            }
+          }
+        } catch {}
+      }
       // Load tweets
       try {
         const tweetsResp = await fetch('/edas_exports/' + (this._idx.tweets_sample || 'tweets_sample.json'));

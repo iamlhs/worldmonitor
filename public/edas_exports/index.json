@@ -1,5 +1,6 @@
 {
   "events": "events.json",
+  "ukraine": "ukraine_with_cluid.json",
   "tweets_sample": "tweets_sample.json",
   "copied_assets": [
     "chain1.json",

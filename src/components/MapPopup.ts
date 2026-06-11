@@ -1479,7 +1479,7 @@ export class MapPopup {
     const severityClass = escapeHtml(event.severity);
     const severityLabel = escapeHtml(event.severity.toUpperCase());
     const eventTypeLabel = escapeHtml(event.eventType.replace('_', ' ').toUpperCase());
-    const icon = event.eventType === 'riot' ? '🔥' : event.eventType === 'strike' ? '✊' : '📢';
+    const icon = event.eventType === 'riot' ? '🔥' : event.eventType === 'strike' ? '✊' : event.eventType === 'civil_unrest' ? '⚔️' : '📢';
 
     // EDAS source detection — id prefix 'edas:' is the most reliable signal
     // since the server handler always sets it. sourceType may be stripped by
@@ -1584,7 +1584,7 @@ export class MapPopup {
     const firstEdasId = edasItems.length > 0 ? edasItems[0].id : null;
 
     const listItems = sortedItems.slice(0, 10).map(event => {
-      const icon = event.eventType === 'riot' ? '🔥' : event.eventType === 'strike' ? '✊' : '📢';
+      const icon = event.eventType === 'riot' ? '🔥' : event.eventType === 'strike' ? '✊' : event.eventType === 'civil_unrest' ? '⚔️' : '📢';
       const sevClass = event.severity;
       const dateStr = event.time.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
       const city = event.city ? escapeHtml(event.city) : '';
