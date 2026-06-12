@@ -643,11 +643,14 @@ export class MapContainer {
   }
 
   public setNewsLocations(data: NewsLocationMarker[]): void {
+    console.log('[NewsPlot] MapContainer.setNewsLocations called, data.length=', data?.length, 'useGlobe=', this.useGlobe, 'useDeckGL=', this.useDeckGL);
     this.cachedNewsLocations = data;
-    if (this.useGlobe) { this.globeMap?.setNewsLocations(data); return; }
+    if (this.useGlobe) { console.log('[NewsPlot] routing to globeMap'); this.globeMap?.setNewsLocations(data); return; }
     if (this.useDeckGL) {
+      console.log('[NewsPlot] routing to deckGLMap', !!this.deckGLMap);
       this.deckGLMap?.setNewsLocations(data);
     } else {
+      console.log('[NewsPlot] routing to svgMap');
       this.svgMap?.setNewsLocations(data);
     }
   }

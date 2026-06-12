@@ -2023,7 +2023,10 @@ export class DeckGLMap {
 
     // News geo-locations (always shown if data exists)
     if (this.newsLocations.length > 0) {
+      console.log('[NewsPlot] buildLayers: adding news locations layer, count=', this.newsLocations.length);
       layers.push(...this.createNewsLocationsLayer());
+    } else {
+      console.log('[NewsPlot] buildLayers: no news locations to render');
     }
 
     const result = layers.filter(Boolean) as LayersList;
@@ -3975,6 +3978,7 @@ export class DeckGLMap {
     const zoom = this.maplibreMap?.getZoom() || 2;
     const alphaScale = zoom < 2.5 ? 0.4 : zoom < 4 ? 0.7 : 1.0;
     const filteredNewsLocations = this.filterByTime(this.newsLocations, (location) => location.timestamp);
+    console.log('[NewsPlot] createNewsLocationsLayer: total=', this.newsLocations.length, 'filtered=', filteredNewsLocations.length, 'zoom=', zoom, 'alphaScale=', alphaScale);
     const THREAT_RGB: Record<string, [number, number, number]> = {
       critical: [239, 68, 68],
       high: [249, 115, 22],
@@ -6357,6 +6361,7 @@ export class DeckGLMap {
   }
 
   public setNewsLocations(data: Array<{ lat: number; lon: number; title: string; threatLevel: string; timestamp?: Date }>): void {
+    console.log('[NewsPlot] DeckGLMap.setNewsLocations: data.length=', data?.length, 'existing=', this.newsLocations.length);
     const now = Date.now();
     for (const d of data) {
       if (!this.newsLocationFirstSeen.has(d.title)) {
@@ -6367,6 +6372,7 @@ export class DeckGLMap {
       if (now - ts > 60_000) this.newsLocationFirstSeen.delete(key);
     }
     this.newsLocations = data;
+    console.log('[NewsPlot] calling this.render(), newsLocations.length=', this.newsLocations.length);
     this.render();
 
     this.syncPulseAnimation(now);

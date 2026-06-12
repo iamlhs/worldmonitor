@@ -310,6 +310,15 @@ export class DataLoaderManager implements AppModule {
   constructor(ctx: AppContext, callbacks: DataLoaderCallbacks) {
     this.ctx = ctx;
     this.callbacks = callbacks;
+
+    // News Plotter: listen for plot/clear events from the NewsPlotPanel
+    // (registered here, NOT in init(), because init() is never called)
+    window.addEventListener('news:plot', (ev: Event) => {
+      handleNewsPlotEvent(this.ctx.map, ev);
+    });
+    window.addEventListener('news:clear', () => {
+      handleNewsClearEvent(this.ctx.map);
+    });
   }
 
   init(): void {
@@ -323,14 +332,6 @@ export class DataLoaderManager implements AppModule {
       });
     };
     window.addEventListener('wm-market-watchlist-changed', this.boundMarketWatchlistHandler as EventListener);
-
-    // News Plotter: listen for plot/clear events from the NewsPlotPanel
-    window.addEventListener('news:plot', (ev: Event) => {
-      handleNewsPlotEvent(this.ctx.map, ev);
-    });
-    window.addEventListener('news:clear', () => {
-      handleNewsClearEvent(this.ctx.map);
-    });
 
     this.dailyBriefFrameworkUnsubscribe = subscribeFrameworkChange('daily-market-brief', () => {
       void this.loadDailyMarketBrief(true);

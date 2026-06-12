@@ -78,6 +78,7 @@ export interface NewsMarker {
   title: string;
   threatLevel: string;
   country: string;
+  timestamp?: Date;
 }
 
 /**
@@ -98,8 +99,9 @@ export function extractLocations(text: string): NewsMarker[] {
             lat: loc.latitude,
             lon: loc.longitude,
             title: `${loc.keywords[0]}, ${loc.country}`,
-            threatLevel: 'info',
+            threatLevel: 'medium',
             country: loc.country,
+            timestamp: new Date(),
           });
         }
         break; // one match per entry
@@ -162,8 +164,8 @@ export function classifyEventType(text: string): string {
  */
 export function plotNewsToMap(markers: NewsMarker[]): void {
   if (markers.length === 0) return;
+  console.log('[NewsPlot] plotNewsToMap: dispatching news:plot with', markers.length, 'markers:', JSON.stringify(markers));
   window.dispatchEvent(new CustomEvent('news:plot', { detail: { markers } }));
-  console.log(`[NewsPlot] Plotting ${markers.length} markers to map`);
 }
 
 /**
@@ -179,11 +181,16 @@ export function handleNewsPlotEvent(
   map: any,
   event: Event,
 ): void {
+  console.log('[NewsPlot] handleNewsPlotEvent called, map=', !!map, 'event type=', event.type);
   const detail = (event as CustomEvent).detail;
   const markers = detail?.markers;
+  console.log('[NewsPlot] detail markers:', Array.isArray(markers) ? markers.length : 'not array', markers);
   if (Array.isArray(markers) && markers.length > 0) {
+    console.log('[NewsPlot] calling map.setNewsLocations with', markers.length, 'markers');
     map?.setNewsLocations(markers);
     map?.setLayerReady('newsLocations', true);
+  } else {
+    console.log('[NewsPlot] no valid markers found in event');
   }
 }
 
